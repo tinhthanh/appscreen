@@ -5,6 +5,9 @@ const state = {
     outputDevice: 'iphone-6.9',
     customWidth: 1290,
     customHeight: 2796,
+    use3D: false,
+    rotation3D: { x: 0, y: 0, z: 0 },
+    scale3D: 100,
     background: {
         type: 'gradient',
         gradient: {
@@ -256,6 +259,9 @@ function saveState() {
         outputDevice: state.outputDevice,
         customWidth: state.customWidth,
         customHeight: state.customHeight,
+        use3D: state.use3D,
+        rotation3D: state.rotation3D,
+        scale3D: state.scale3D,
         background: {
             type: state.background.type,
             gradient: state.background.gradient,
@@ -320,7 +326,10 @@ function loadState() {
                     state.outputDevice = parsed.outputDevice || 'iphone-6.9';
                     state.customWidth = parsed.customWidth || 1320;
                     state.customHeight = parsed.customHeight || 2868;
-                    
+                    state.use3D = parsed.use3D || false;
+                    state.rotation3D = parsed.rotation3D || { x: 0, y: 0, z: 0 };
+                    state.scale3D = parsed.scale3D || 100;
+
                     if (parsed.background) {
                         state.background.type = parsed.background.type || 'gradient';
                         state.background.gradient = parsed.background.gradient || state.background.gradient;
@@ -365,6 +374,9 @@ function resetStateToDefaults() {
     state.outputDevice = 'iphone-6.9';
     state.customWidth = 1320;
     state.customHeight = 2868;
+    state.use3D = false;
+    state.rotation3D = { x: 0, y: 0, z: 0 };
+    state.scale3D = 100;
     state.background = {
         type: 'gradient',
         gradient: {
@@ -600,6 +612,23 @@ function syncUIWithState() {
     // Language UIs
     updateHeadlineLanguageUI();
     updateSubheadlineLanguageUI();
+
+    // 3D mode
+    document.getElementById('use-3d-toggle').classList.toggle('active', state.use3D);
+    document.getElementById('rotation-3d-options').style.display = state.use3D ? 'block' : 'none';
+    document.getElementById('rotation-3d-x').value = state.rotation3D.x;
+    document.getElementById('rotation-3d-x-value').textContent = state.rotation3D.x + '°';
+    document.getElementById('rotation-3d-y').value = state.rotation3D.y;
+    document.getElementById('rotation-3d-y-value').textContent = state.rotation3D.y + '°';
+    document.getElementById('rotation-3d-z').value = state.rotation3D.z;
+    document.getElementById('rotation-3d-z-value').textContent = state.rotation3D.z + '°';
+    document.getElementById('scale-3d').value = state.scale3D;
+    document.getElementById('scale-3d-value').textContent = state.scale3D + '%';
+
+    // Show/hide 3D renderer
+    if (typeof showThreeJS === 'function') {
+        showThreeJS(state.use3D);
+    }
 }
 
 function setupEventListeners() {
@@ -1210,6 +1239,60 @@ function setupEventListeners() {
             applyPositionPreset(btn.dataset.preset);
         });
     });
+
+    // 3D mode toggle
+    document.getElementById('use-3d-toggle').addEventListener('click', function() {
+        this.classList.toggle('active');
+        state.use3D = this.classList.contains('active');
+        document.getElementById('rotation-3d-options').style.display = state.use3D ? 'block' : 'none';
+
+        if (typeof showThreeJS === 'function') {
+            showThreeJS(state.use3D);
+        }
+
+        if (state.use3D && typeof updateScreenTexture === 'function') {
+            updateScreenTexture();
+        }
+
+        updateCanvas();
+    });
+
+    // 3D rotation controls
+    document.getElementById('rotation-3d-x').addEventListener('input', (e) => {
+        state.rotation3D.x = parseInt(e.target.value);
+        document.getElementById('rotation-3d-x-value').textContent = e.target.value + '°';
+        if (typeof setThreeJSRotation === 'function') {
+            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+        }
+        updateCanvas(); // Keep export canvas in sync
+    });
+
+    document.getElementById('rotation-3d-y').addEventListener('input', (e) => {
+        state.rotation3D.y = parseInt(e.target.value);
+        document.getElementById('rotation-3d-y-value').textContent = e.target.value + '°';
+        if (typeof setThreeJSRotation === 'function') {
+            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+        }
+        updateCanvas(); // Keep export canvas in sync
+    });
+
+    document.getElementById('rotation-3d-z').addEventListener('input', (e) => {
+        state.rotation3D.z = parseInt(e.target.value);
+        document.getElementById('rotation-3d-z-value').textContent = e.target.value + '°';
+        if (typeof setThreeJSRotation === 'function') {
+            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+        }
+        updateCanvas(); // Keep export canvas in sync
+    });
+
+    document.getElementById('scale-3d').addEventListener('input', (e) => {
+        state.scale3D = parseInt(e.target.value);
+        document.getElementById('scale-3d-value').textContent = e.target.value + '%';
+        if (typeof setThreeJSScale === 'function') {
+            setThreeJSScale(state.scale3D);
+        }
+        updateCanvas(); // Keep export canvas in sync
+    });
 }
 
 // Helper function to check if per-screenshot text mode is active
@@ -1808,6 +1891,10 @@ function handleFiles(files) {
                     if (state.screenshots.length === 1) {
                         state.selectedIndex = 0;
                     }
+                    // Update 3D texture if in 3D mode
+                    if (state.use3D && typeof updateScreenTexture === 'function') {
+                        updateScreenTexture();
+                    }
                     updateCanvas();
                 };
                 img.src = e.target.result;
@@ -1844,6 +1931,10 @@ function updateScreenshotList() {
                 // Update text UI if in per-screenshot mode
                 if (isPerScreenshotTextMode()) {
                     loadTextUIFromScreenshot();
+                }
+                // Update 3D texture if in 3D mode
+                if (state.use3D && typeof updateScreenTexture === 'function') {
+                    updateScreenTexture();
                 }
                 updateCanvas();
             }
@@ -1927,9 +2018,15 @@ function updateCanvas() {
     // Draw background
     drawBackground();
 
-    // Draw screenshot
+    // Draw screenshot (2D mode) or 3D phone model
     if (state.screenshots.length > 0) {
-        drawScreenshot();
+        if (state.use3D && typeof renderThreeJSToCanvas === 'function' && phoneModelLoaded) {
+            // In 3D mode, render the phone model onto the canvas
+            renderThreeJSToCanvas(canvas, dims.width, dims.height);
+        } else if (!state.use3D) {
+            // In 2D mode, draw the screenshot normally
+            drawScreenshot();
+        }
     }
 
     // Draw text
@@ -2262,6 +2359,9 @@ function exportCurrent() {
         alert('Please upload a screenshot first');
         return;
     }
+
+    // Ensure canvas is up-to-date (especially important for 3D mode)
+    updateCanvas();
 
     const link = document.createElement('a');
     link.download = `screenshot-${state.selectedIndex + 1}.png`;

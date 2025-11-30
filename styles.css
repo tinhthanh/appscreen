@@ -344,6 +344,16 @@ input[type="range"]::-webkit-slider-thumb {
     height: auto;
 }
 
+#threejs-container {
+    width: 400px;
+    height: 700px;
+    display: block;
+}
+
+#threejs-container canvas {
+    display: block;
+}
+
 .no-screenshot {
     position: absolute;
     top: 50%;

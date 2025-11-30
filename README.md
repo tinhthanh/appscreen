@@ -63,12 +63,17 @@ Your API key is stored locally in your browser and only sent to Anthropic's API.
 
 - Vanilla JavaScript (no frameworks)
 - HTML5 Canvas for rendering
+- Three.js for 3D device mockups
 - IndexedDB for local storage
 - Claude API for translations
 
 ## License
 
 MIT License - feel free to use, modify, and distribute.
+
+## Credits
+
+- **iPhone 15 Pro Max 3D Model** by [MajdyModels](https://sketchfab.com/majdymodels) - Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## Author
 
