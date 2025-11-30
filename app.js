@@ -2376,6 +2376,7 @@ async function exportAll() {
     }
 
     const originalIndex = state.selectedIndex;
+    const zip = new JSZip();
 
     for (let i = 0; i < state.screenshots.length; i++) {
         state.selectedIndex = i;
@@ -2383,16 +2384,23 @@ async function exportAll() {
 
         await new Promise(resolve => setTimeout(resolve, 100));
 
-        const link = document.createElement('a');
-        link.download = `screenshot-${i + 1}.png`;
-        link.href = canvas.toDataURL('image/png');
-        link.click();
+        // Get canvas data as base64, strip the data URL prefix
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Data = dataUrl.replace(/^data:image\/png;base64,/, '');
 
-        await new Promise(resolve => setTimeout(resolve, 300));
+        zip.file(`screenshot-${i + 1}.png`, base64Data, { base64: true });
     }
 
     state.selectedIndex = originalIndex;
     updateCanvas();
+
+    // Generate and download the ZIP file
+    const content = await zip.generateAsync({ type: 'blob' });
+    const link = document.createElement('a');
+    link.download = 'screenshots.zip';
+    link.href = URL.createObjectURL(content);
+    link.click();
+    URL.revokeObjectURL(link.href);
 }
 
 // Initialize the app
