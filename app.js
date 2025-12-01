@@ -2,80 +2,152 @@
 const state = {
     screenshots: [],
     selectedIndex: 0,
+    transferTarget: null, // Index of screenshot waiting to receive style transfer
     outputDevice: 'iphone-6.9',
     customWidth: 1290,
     customHeight: 2796,
-    use3D: false,
-    rotation3D: { x: 0, y: 0, z: 0 },
-    scale3D: 100,
-    background: {
-        type: 'gradient',
-        gradient: {
-            angle: 135,
-            stops: [
-                { color: '#667eea', position: 0 },
-                { color: '#764ba2', position: 100 }
-            ]
+    // Default settings applied to new screenshots
+    defaults: {
+        background: {
+            type: 'gradient',
+            gradient: {
+                angle: 135,
+                stops: [
+                    { color: '#667eea', position: 0 },
+                    { color: '#764ba2', position: 100 }
+                ]
+            },
+            solid: '#1a1a2e',
+            image: null,
+            imageFit: 'cover',
+            imageBlur: 0,
+            overlayColor: '#000000',
+            overlayOpacity: 0,
+            noise: false,
+            noiseIntensity: 10
         },
-        solid: '#1a1a2e',
-        image: null,
-        imageFit: 'cover',
-        imageBlur: 0,
-        overlayColor: '#000000',
-        overlayOpacity: 0,
-        noise: false,
-        noiseIntensity: 10
-    },
-    screenshot: {
-        scale: 70,
-        y: 55,
-        x: 50,
-        rotation: 0,
-        perspective: 0,
-        cornerRadius: 24,
-        shadow: {
-            enabled: true,
-            color: '#000000',
-            blur: 40,
-            opacity: 30,
-            x: 0,
-            y: 20
+        screenshot: {
+            scale: 70,
+            y: 55,
+            x: 50,
+            rotation: 0,
+            perspective: 0,
+            cornerRadius: 24,
+            use3D: false,
+            rotation3D: { x: 0, y: 0, z: 0 },
+            shadow: {
+                enabled: true,
+                color: '#000000',
+                blur: 40,
+                opacity: 30,
+                x: 0,
+                y: 20
+            },
+            frame: {
+                enabled: false,
+                style: 'iphone-15-pro',
+                color: '#1d1d1f',
+                width: 12,
+                opacity: 100
+            }
         },
-        frame: {
-            enabled: false,
-            style: 'iphone-15-pro',
-            color: '#1d1d1f',
-            width: 12,
-            opacity: 100
+        text: {
+            headlines: { en: '' },
+            headlineLanguages: ['en'],
+            currentHeadlineLang: 'en',
+            headlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
+            headlineSize: 100,
+            headlineWeight: '600',
+            headlineItalic: false,
+            headlineUnderline: false,
+            headlineStrikethrough: false,
+            headlineColor: '#ffffff',
+            position: 'top',
+            offsetY: 12,
+            lineHeight: 110,
+            subheadlines: { en: '' },
+            subheadlineLanguages: ['en'],
+            currentSubheadlineLang: 'en',
+            subheadlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
+            subheadlineSize: 50,
+            subheadlineWeight: '400',
+            subheadlineItalic: false,
+            subheadlineUnderline: false,
+            subheadlineStrikethrough: false,
+            subheadlineColor: '#ffffff',
+            subheadlineOpacity: 70
         }
-    },
-    text: {
-        headlines: { en: '' },
-        headlineLanguages: ['en'],
-        currentHeadlineLang: 'en',
-        headlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
-        headlineSize: 100,
-        headlineWeight: '600',
-        headlineItalic: false,
-        headlineUnderline: false,
-        headlineStrikethrough: false,
-        headlineColor: '#ffffff',
-        position: 'top',
-        offsetY: 12,
-        lineHeight: 110,
-        subheadlines: { en: '' },
-        subheadlineLanguages: ['en'],
-        currentSubheadlineLang: 'en',
-        subheadlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
-        subheadlineSize: 50,
-        subheadlineWeight: '400',
-        subheadlineItalic: false,
-        subheadlineUnderline: false,
-        subheadlineStrikethrough: false,
-        subheadlineColor: '#ffffff',
-        subheadlineOpacity: 70
     }
 };
+
+// Helper functions to get/set current screenshot settings
+function getCurrentScreenshot() {
+    if (state.screenshots.length === 0) return null;
+    return state.screenshots[state.selectedIndex];
+}
+
+function getBackground() {
+    const screenshot = getCurrentScreenshot();
+    return screenshot ? screenshot.background : state.defaults.background;
+}
+
+function getScreenshotSettings() {
+    const screenshot = getCurrentScreenshot();
+    return screenshot ? screenshot.screenshot : state.defaults.screenshot;
+}
+
+function getText() {
+    const screenshot = getCurrentScreenshot();
+    return screenshot ? screenshot.text : state.defaults.text;
+}
+
+function setBackground(key, value) {
+    const screenshot = getCurrentScreenshot();
+    if (screenshot) {
+        if (key.includes('.')) {
+            const parts = key.split('.');
+            let obj = screenshot.background;
+            for (let i = 0; i < parts.length - 1; i++) {
+                obj = obj[parts[i]];
+            }
+            obj[parts[parts.length - 1]] = value;
+        } else {
+            screenshot.background[key] = value;
+        }
+    }
+}
+
+function setScreenshotSetting(key, value) {
+    const screenshot = getCurrentScreenshot();
+    if (screenshot) {
+        if (key.includes('.')) {
+            const parts = key.split('.');
+            let obj = screenshot.screenshot;
+            for (let i = 0; i < parts.length - 1; i++) {
+                obj = obj[parts[i]];
+            }
+            obj[parts[parts.length - 1]] = value;
+        } else {
+            screenshot.screenshot[key] = value;
+        }
+    }
+}
+
+function setTextSetting(key, value) {
+    const screenshot = getCurrentScreenshot();
+    if (screenshot) {
+        screenshot.text[key] = value;
+    }
+}
+
+function setCurrentScreenshotAsDefault() {
+    const screenshot = getCurrentScreenshot();
+    if (screenshot) {
+        state.defaults.background = JSON.parse(JSON.stringify(screenshot.background));
+        state.defaults.screenshot = JSON.parse(JSON.stringify(screenshot.screenshot));
+        state.defaults.text = JSON.parse(JSON.stringify(screenshot.text));
+    }
+}
 
 // Language flags mapping
 const languageFlags = {
@@ -817,11 +889,14 @@ function initSync() {
 function saveState() {
     if (!db) return;
     
-    // Convert screenshots to base64 for storage
+    // Convert screenshots to base64 for storage, including per-screenshot settings
     const screenshotsToSave = state.screenshots.map(s => ({
         src: s.image.src,
         name: s.name,
         deviceType: s.deviceType,
+        background: s.background,
+        screenshot: s.screenshot,
+        text: s.text,
         overrides: s.overrides
     }));
 
@@ -832,22 +907,7 @@ function saveState() {
         outputDevice: state.outputDevice,
         customWidth: state.customWidth,
         customHeight: state.customHeight,
-        use3D: state.use3D,
-        rotation3D: state.rotation3D,
-        scale3D: state.scale3D,
-        background: {
-            type: state.background.type,
-            gradient: state.background.gradient,
-            solid: state.background.solid,
-            imageFit: state.background.imageFit,
-            imageBlur: state.background.imageBlur,
-            overlayColor: state.background.overlayColor,
-            overlayOpacity: state.background.overlayOpacity,
-            noise: state.background.noise,
-            noiseIntensity: state.background.noiseIntensity
-        },
-        screenshot: state.screenshot,
-        text: state.text
+        defaults: state.defaults
     };
     
     try {
@@ -872,8 +932,42 @@ function loadState() {
             request.onsuccess = () => {
                 const parsed = request.result;
                 if (parsed) {
-                    // Load screenshots
+                    // Check if this is an old-style project (no per-screenshot settings)
+                    const isOldFormat = !parsed.defaults && (parsed.background || parsed.screenshot || parsed.text);
+                    const hasScreenshotsWithoutSettings = parsed.screenshots?.some(s => !s.background && !s.screenshot && !s.text);
+                    const needsMigration = isOldFormat || hasScreenshotsWithoutSettings;
+
+                    // Load screenshots with their per-screenshot settings
                     state.screenshots = [];
+
+                    // Build migrated settings from old format if needed
+                    let migratedBackground = state.defaults.background;
+                    let migratedScreenshot = state.defaults.screenshot;
+                    let migratedText = state.defaults.text;
+
+                    if (isOldFormat) {
+                        if (parsed.background) {
+                            migratedBackground = {
+                                type: parsed.background.type || 'gradient',
+                                gradient: parsed.background.gradient || state.defaults.background.gradient,
+                                solid: parsed.background.solid || state.defaults.background.solid,
+                                image: null,
+                                imageFit: parsed.background.imageFit || 'cover',
+                                imageBlur: parsed.background.imageBlur || 0,
+                                overlayColor: parsed.background.overlayColor || '#000000',
+                                overlayOpacity: parsed.background.overlayOpacity || 0,
+                                noise: parsed.background.noise || false,
+                                noiseIntensity: parsed.background.noiseIntensity || 10
+                            };
+                        }
+                        if (parsed.screenshot) {
+                            migratedScreenshot = { ...state.defaults.screenshot, ...parsed.screenshot };
+                        }
+                        if (parsed.text) {
+                            migratedText = { ...state.defaults.text, ...parsed.text };
+                        }
+                    }
+
                     if (parsed.screenshots && parsed.screenshots.length > 0) {
                         let loadedCount = 0;
                         parsed.screenshots.forEach((s, index) => {
@@ -883,44 +977,42 @@ function loadState() {
                                     image: img,
                                     name: s.name,
                                     deviceType: s.deviceType,
+                                    // Load per-screenshot settings if they exist, otherwise use migrated/default settings
+                                    background: s.background || JSON.parse(JSON.stringify(migratedBackground)),
+                                    screenshot: s.screenshot || JSON.parse(JSON.stringify(migratedScreenshot)),
+                                    text: s.text || JSON.parse(JSON.stringify(migratedText)),
                                     overrides: s.overrides || {}
                                 };
                                 loadedCount++;
                                 if (loadedCount === parsed.screenshots.length) {
                                     updateScreenshotList();
+                                    // Sync UI with loaded screenshot settings (including 3D mode)
+                                    syncUIWithState();
+                                    updateGradientStopsUI();
                                     updateCanvas();
+
+                                    // Offer to convert old project after loading
+                                    if (needsMigration && parsed.screenshots.length > 0) {
+                                        showMigrationPrompt();
+                                    }
                                 }
                             };
                             img.src = s.src;
                         });
                     }
-                    
+
                     state.selectedIndex = parsed.selectedIndex || 0;
                     state.outputDevice = parsed.outputDevice || 'iphone-6.9';
                     state.customWidth = parsed.customWidth || 1320;
                     state.customHeight = parsed.customHeight || 2868;
-                    state.use3D = parsed.use3D || false;
-                    state.rotation3D = parsed.rotation3D || { x: 0, y: 0, z: 0 };
-                    state.scale3D = parsed.scale3D || 100;
 
-                    if (parsed.background) {
-                        state.background.type = parsed.background.type || 'gradient';
-                        state.background.gradient = parsed.background.gradient || state.background.gradient;
-                        state.background.solid = parsed.background.solid || state.background.solid;
-                        state.background.imageFit = parsed.background.imageFit || 'cover';
-                        state.background.imageBlur = parsed.background.imageBlur || 0;
-                        state.background.overlayColor = parsed.background.overlayColor || '#000000';
-                        state.background.overlayOpacity = parsed.background.overlayOpacity || 0;
-                        state.background.noise = parsed.background.noise || false;
-                        state.background.noiseIntensity = parsed.background.noiseIntensity || 10;
-                    }
-                    
-                    if (parsed.screenshot) {
-                        state.screenshot = { ...state.screenshot, ...parsed.screenshot };
-                    }
-                    
-                    if (parsed.text) {
-                        state.text = { ...state.text, ...parsed.text };
+                    // Load defaults (new format) or use migrated settings
+                    if (parsed.defaults) {
+                        state.defaults = parsed.defaults;
+                    } else {
+                        state.defaults.background = migratedBackground;
+                        state.defaults.screenshot = migratedScreenshot;
+                        state.defaults.text = migratedText;
                     }
                 } else {
                     // New project, reset to defaults
@@ -940,6 +1032,27 @@ function loadState() {
     });
 }
 
+// Show migration prompt for old-style projects
+function showMigrationPrompt() {
+    const modal = document.getElementById('migration-modal');
+    if (modal) {
+        modal.classList.add('visible');
+    }
+}
+
+function hideMigrationPrompt() {
+    const modal = document.getElementById('migration-modal');
+    if (modal) {
+        modal.classList.remove('visible');
+    }
+}
+
+function convertProject() {
+    // Project is already converted in memory, just save it
+    saveState();
+    hideMigrationPrompt();
+}
+
 // Reset state to defaults (without clearing storage)
 function resetStateToDefaults() {
     state.screenshots = [];
@@ -947,75 +1060,74 @@ function resetStateToDefaults() {
     state.outputDevice = 'iphone-6.9';
     state.customWidth = 1320;
     state.customHeight = 2868;
-    state.use3D = false;
-    state.rotation3D = { x: 0, y: 0, z: 0 };
-    state.scale3D = 100;
-    state.background = {
-        type: 'gradient',
-        gradient: {
-            angle: 135,
-            stops: [
-                { color: '#667eea', position: 0 },
-                { color: '#764ba2', position: 100 }
-            ]
+    state.defaults = {
+        background: {
+            type: 'gradient',
+            gradient: {
+                angle: 135,
+                stops: [
+                    { color: '#667eea', position: 0 },
+                    { color: '#764ba2', position: 100 }
+                ]
+            },
+            solid: '#1a1a2e',
+            image: null,
+            imageFit: 'cover',
+            imageBlur: 0,
+            overlayColor: '#000000',
+            overlayOpacity: 0,
+            noise: false,
+            noiseIntensity: 10
         },
-        solid: '#1a1a2e',
-        image: null,
-        imageFit: 'cover',
-        imageBlur: 0,
-        overlayColor: '#000000',
-        overlayOpacity: 0,
-        noise: false,
-        noiseIntensity: 10
-    };
-    state.screenshot = {
-        scale: 70,
-        y: 55,
-        x: 50,
-        rotation: 0,
-        perspective: 0,
-        cornerRadius: 24,
-        shadow: {
-            enabled: true,
-            color: '#000000',
-            blur: 40,
-            opacity: 30,
-            x: 0,
-            y: 20
+        screenshot: {
+            scale: 70,
+            y: 55,
+            x: 50,
+            rotation: 0,
+            perspective: 0,
+            cornerRadius: 24,
+            shadow: {
+                enabled: true,
+                color: '#000000',
+                blur: 40,
+                opacity: 30,
+                x: 0,
+                y: 20
+            },
+            frame: {
+                enabled: false,
+                style: 'iphone-15-pro',
+                color: '#1d1d1f',
+                width: 12,
+                opacity: 100
+            }
         },
-        frame: {
-            enabled: false,
-            style: 'iphone-15-pro',
-            color: '#1d1d1f',
-            width: 12,
-            opacity: 100
+        text: {
+            headlines: { en: '' },
+            headlineLanguages: ['en'],
+            currentHeadlineLang: 'en',
+            headlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
+            headlineSize: 100,
+            headlineWeight: '600',
+            headlineItalic: false,
+            headlineUnderline: false,
+            headlineStrikethrough: false,
+            headlineColor: '#ffffff',
+            position: 'top',
+            offsetY: 12,
+            lineHeight: 110,
+            subheadlines: { en: '' },
+            subheadlineLanguages: ['en'],
+            currentSubheadlineLang: 'en',
+            subheadlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
+            subheadlineSize: 50,
+            subheadlineWeight: '400',
+            subheadlineItalic: false,
+            subheadlineUnderline: false,
+            subheadlineStrikethrough: false,
+            subheadlineColor: '#ffffff',
+            subheadlineOpacity: 70
         }
-    };
-    state.text = {
-        headlines: { en: '' },
-        headlineLanguages: ['en'],
-        currentHeadlineLang: 'en',
-        headlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
-        headlineSize: 100,
-        headlineWeight: '600',
-        headlineItalic: false,
-        headlineUnderline: false,
-        headlineStrikethrough: false,
-        headlineColor: '#ffffff',
-        position: 'top',
-        offsetY: 12,
-        lineHeight: 110,
-        subheadlines: { en: '' },
-        subheadlineLanguages: ['en'],
-        currentSubheadlineLang: 'en',
-        subheadlineFont: "-apple-system, BlinkMacSystemFont, 'SF Pro Display'",
-        subheadlineSize: 50,
-        subheadlineWeight: '400',
-        subheadlineItalic: false,
-        subheadlineUnderline: false,
-        subheadlineStrikethrough: false,
-        subheadlineColor: '#ffffff',
-        subheadlineOpacity: 70
     };
 }
 
@@ -1030,11 +1142,7 @@ async function switchProject(projectId) {
     // Reset and load new project
     resetStateToDefaults();
     await loadState();
-    
-    // Reset per-screenshot text toggle
-    document.getElementById('per-screenshot-text-toggle').classList.remove('active');
-    document.getElementById('tab-text').classList.remove('per-screenshot-mode');
-    
+
     syncUIWithState();
     updateScreenshotList();
     updateGradientStopsUI();
@@ -1096,109 +1204,114 @@ function syncUIWithState() {
     document.getElementById('custom-width').value = state.customWidth;
     document.getElementById('custom-height').value = state.customHeight;
 
+    // Get current screenshot's settings
+    const bg = getBackground();
+    const ss = getScreenshotSettings();
+    const txt = getText();
+
     // Background type
     document.querySelectorAll('#bg-type-selector button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.type === state.background.type);
+        btn.classList.toggle('active', btn.dataset.type === bg.type);
     });
-    document.getElementById('gradient-options').style.display = state.background.type === 'gradient' ? 'block' : 'none';
-    document.getElementById('solid-options').style.display = state.background.type === 'solid' ? 'block' : 'none';
-    document.getElementById('image-options').style.display = state.background.type === 'image' ? 'block' : 'none';
+    document.getElementById('gradient-options').style.display = bg.type === 'gradient' ? 'block' : 'none';
+    document.getElementById('solid-options').style.display = bg.type === 'solid' ? 'block' : 'none';
+    document.getElementById('image-options').style.display = bg.type === 'image' ? 'block' : 'none';
 
     // Gradient
-    document.getElementById('gradient-angle').value = state.background.gradient.angle;
-    document.getElementById('gradient-angle-value').textContent = state.background.gradient.angle + '°';
+    document.getElementById('gradient-angle').value = bg.gradient.angle;
+    document.getElementById('gradient-angle-value').textContent = bg.gradient.angle + '°';
     updateGradientStopsUI();
 
     // Solid color
-    document.getElementById('solid-color').value = state.background.solid;
-    document.getElementById('solid-color-hex').value = state.background.solid;
+    document.getElementById('solid-color').value = bg.solid;
+    document.getElementById('solid-color-hex').value = bg.solid;
 
     // Image background
-    document.getElementById('bg-image-fit').value = state.background.imageFit;
-    document.getElementById('bg-blur').value = state.background.imageBlur;
-    document.getElementById('bg-blur-value').textContent = state.background.imageBlur + 'px';
-    document.getElementById('bg-overlay-color').value = state.background.overlayColor;
-    document.getElementById('bg-overlay-hex').value = state.background.overlayColor;
-    document.getElementById('bg-overlay-opacity').value = state.background.overlayOpacity;
-    document.getElementById('bg-overlay-opacity-value').textContent = state.background.overlayOpacity + '%';
+    document.getElementById('bg-image-fit').value = bg.imageFit;
+    document.getElementById('bg-blur').value = bg.imageBlur;
+    document.getElementById('bg-blur-value').textContent = bg.imageBlur + 'px';
+    document.getElementById('bg-overlay-color').value = bg.overlayColor;
+    document.getElementById('bg-overlay-hex').value = bg.overlayColor;
+    document.getElementById('bg-overlay-opacity').value = bg.overlayOpacity;
+    document.getElementById('bg-overlay-opacity-value').textContent = bg.overlayOpacity + '%';
 
     // Noise
-    document.getElementById('noise-toggle').classList.toggle('active', state.background.noise);
-    document.getElementById('noise-options').style.display = state.background.noise ? 'block' : 'none';
-    document.getElementById('noise-intensity').value = state.background.noiseIntensity;
-    document.getElementById('noise-intensity-value').textContent = state.background.noiseIntensity + '%';
+    document.getElementById('noise-toggle').classList.toggle('active', bg.noise);
+    document.getElementById('noise-options').style.display = bg.noise ? 'block' : 'none';
+    document.getElementById('noise-intensity').value = bg.noiseIntensity;
+    document.getElementById('noise-intensity-value').textContent = bg.noiseIntensity + '%';
 
     // Screenshot settings
-    document.getElementById('screenshot-scale').value = state.screenshot.scale;
-    document.getElementById('screenshot-scale-value').textContent = state.screenshot.scale + '%';
-    document.getElementById('screenshot-y').value = state.screenshot.y;
-    document.getElementById('screenshot-y-value').textContent = state.screenshot.y + '%';
-    document.getElementById('screenshot-x').value = state.screenshot.x;
-    document.getElementById('screenshot-x-value').textContent = state.screenshot.x + '%';
-    document.getElementById('corner-radius').value = state.screenshot.cornerRadius;
-    document.getElementById('corner-radius-value').textContent = state.screenshot.cornerRadius + 'px';
-    document.getElementById('screenshot-rotation').value = state.screenshot.rotation;
-    document.getElementById('screenshot-rotation-value').textContent = state.screenshot.rotation + '°';
+    document.getElementById('screenshot-scale').value = ss.scale;
+    document.getElementById('screenshot-scale-value').textContent = ss.scale + '%';
+    document.getElementById('screenshot-y').value = ss.y;
+    document.getElementById('screenshot-y-value').textContent = ss.y + '%';
+    document.getElementById('screenshot-x').value = ss.x;
+    document.getElementById('screenshot-x-value').textContent = ss.x + '%';
+    document.getElementById('corner-radius').value = ss.cornerRadius;
+    document.getElementById('corner-radius-value').textContent = ss.cornerRadius + 'px';
+    document.getElementById('screenshot-rotation').value = ss.rotation;
+    document.getElementById('screenshot-rotation-value').textContent = ss.rotation + '°';
 
     // Shadow
-    document.getElementById('shadow-toggle').classList.toggle('active', state.screenshot.shadow.enabled);
-    document.getElementById('shadow-options').style.display = state.screenshot.shadow.enabled ? 'block' : 'none';
-    document.getElementById('shadow-color').value = state.screenshot.shadow.color;
-    document.getElementById('shadow-color-hex').value = state.screenshot.shadow.color;
-    document.getElementById('shadow-blur').value = state.screenshot.shadow.blur;
-    document.getElementById('shadow-blur-value').textContent = state.screenshot.shadow.blur + 'px';
-    document.getElementById('shadow-opacity').value = state.screenshot.shadow.opacity;
-    document.getElementById('shadow-opacity-value').textContent = state.screenshot.shadow.opacity + '%';
-    document.getElementById('shadow-x').value = state.screenshot.shadow.x;
-    document.getElementById('shadow-x-value').textContent = state.screenshot.shadow.x + 'px';
-    document.getElementById('shadow-y').value = state.screenshot.shadow.y;
-    document.getElementById('shadow-y-value').textContent = state.screenshot.shadow.y + 'px';
+    document.getElementById('shadow-toggle').classList.toggle('active', ss.shadow.enabled);
+    document.getElementById('shadow-options').style.display = ss.shadow.enabled ? 'block' : 'none';
+    document.getElementById('shadow-color').value = ss.shadow.color;
+    document.getElementById('shadow-color-hex').value = ss.shadow.color;
+    document.getElementById('shadow-blur').value = ss.shadow.blur;
+    document.getElementById('shadow-blur-value').textContent = ss.shadow.blur + 'px';
+    document.getElementById('shadow-opacity').value = ss.shadow.opacity;
+    document.getElementById('shadow-opacity-value').textContent = ss.shadow.opacity + '%';
+    document.getElementById('shadow-x').value = ss.shadow.x;
+    document.getElementById('shadow-x-value').textContent = ss.shadow.x + 'px';
+    document.getElementById('shadow-y').value = ss.shadow.y;
+    document.getElementById('shadow-y-value').textContent = ss.shadow.y + 'px';
 
     // Frame
-    document.getElementById('frame-toggle').classList.toggle('active', state.screenshot.frame.enabled);
-    document.getElementById('frame-options').style.display = state.screenshot.frame.enabled ? 'block' : 'none';
-    document.getElementById('frame-style').value = state.screenshot.frame.style;
-    document.getElementById('frame-color').value = state.screenshot.frame.color;
-    document.getElementById('frame-color-hex').value = state.screenshot.frame.color;
-    document.getElementById('frame-width').value = state.screenshot.frame.width;
-    document.getElementById('frame-width-value').textContent = state.screenshot.frame.width + 'px';
-    document.getElementById('frame-opacity').value = state.screenshot.frame.opacity;
-    document.getElementById('frame-opacity-value').textContent = state.screenshot.frame.opacity + '%';
+    document.getElementById('frame-toggle').classList.toggle('active', ss.frame.enabled);
+    document.getElementById('frame-options').style.display = ss.frame.enabled ? 'block' : 'none';
+    document.getElementById('frame-style').value = ss.frame.style;
+    document.getElementById('frame-color').value = ss.frame.color;
+    document.getElementById('frame-color-hex').value = ss.frame.color;
+    document.getElementById('frame-width').value = ss.frame.width;
+    document.getElementById('frame-width-value').textContent = ss.frame.width + 'px';
+    document.getElementById('frame-opacity').value = ss.frame.opacity;
+    document.getElementById('frame-opacity-value').textContent = ss.frame.opacity + '%';
 
     // Text
-    const currentHeadline = state.text.headlines ? (state.text.headlines[state.text.currentHeadlineLang || 'en'] || '') : (state.text.headline || '');
+    const currentHeadline = txt.headlines ? (txt.headlines[txt.currentHeadlineLang || 'en'] || '') : (txt.headline || '');
     document.getElementById('headline-text').value = currentHeadline;
-    document.getElementById('headline-font').value = state.text.headlineFont;
+    document.getElementById('headline-font').value = txt.headlineFont;
     updateFontPickerPreview();
-    document.getElementById('headline-size').value = state.text.headlineSize;
-    document.getElementById('headline-color').value = state.text.headlineColor;
-    document.getElementById('headline-weight').value = state.text.headlineWeight;
+    document.getElementById('headline-size').value = txt.headlineSize;
+    document.getElementById('headline-color').value = txt.headlineColor;
+    document.getElementById('headline-weight').value = txt.headlineWeight;
     // Sync text style buttons
     document.querySelectorAll('#headline-style button').forEach(btn => {
         const style = btn.dataset.style;
         const key = 'headline' + style.charAt(0).toUpperCase() + style.slice(1);
-        btn.classList.toggle('active', state.text[key] || false);
+        btn.classList.toggle('active', txt[key] || false);
     });
     document.querySelectorAll('#text-position button').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.position === state.text.position);
+        btn.classList.toggle('active', btn.dataset.position === txt.position);
     });
-    document.getElementById('text-offset-y').value = state.text.offsetY;
-    document.getElementById('text-offset-y-value').textContent = state.text.offsetY + '%';
-    document.getElementById('line-height').value = state.text.lineHeight;
-    document.getElementById('line-height-value').textContent = state.text.lineHeight + '%';
-    const currentSubheadline = state.text.subheadlines ? (state.text.subheadlines[state.text.currentSubheadlineLang || 'en'] || '') : (state.text.subheadline || '');
+    document.getElementById('text-offset-y').value = txt.offsetY;
+    document.getElementById('text-offset-y-value').textContent = txt.offsetY + '%';
+    document.getElementById('line-height').value = txt.lineHeight;
+    document.getElementById('line-height-value').textContent = txt.lineHeight + '%';
+    const currentSubheadline = txt.subheadlines ? (txt.subheadlines[txt.currentSubheadlineLang || 'en'] || '') : (txt.subheadline || '');
     document.getElementById('subheadline-text').value = currentSubheadline;
-    document.getElementById('subheadline-font').value = state.text.subheadlineFont || state.text.headlineFont;
-    document.getElementById('subheadline-size').value = state.text.subheadlineSize;
-    document.getElementById('subheadline-color').value = state.text.subheadlineColor;
-    document.getElementById('subheadline-opacity').value = state.text.subheadlineOpacity;
-    document.getElementById('subheadline-opacity-value').textContent = state.text.subheadlineOpacity + '%';
-    document.getElementById('subheadline-weight').value = state.text.subheadlineWeight || '400';
+    document.getElementById('subheadline-font').value = txt.subheadlineFont || txt.headlineFont;
+    document.getElementById('subheadline-size').value = txt.subheadlineSize;
+    document.getElementById('subheadline-color').value = txt.subheadlineColor;
+    document.getElementById('subheadline-opacity').value = txt.subheadlineOpacity;
+    document.getElementById('subheadline-opacity-value').textContent = txt.subheadlineOpacity + '%';
+    document.getElementById('subheadline-weight').value = txt.subheadlineWeight || '400';
     // Sync subheadline style buttons
     document.querySelectorAll('#subheadline-style button').forEach(btn => {
         const style = btn.dataset.style;
         const key = 'subheadline' + style.charAt(0).toUpperCase() + style.slice(1);
-        btn.classList.toggle('active', state.text[key] || false);
+        btn.classList.toggle('active', txt[key] || false);
     });
 
     // Language UIs
@@ -1206,24 +1319,24 @@ function syncUIWithState() {
     updateSubheadlineLanguageUI();
 
     // 3D mode
-    document.getElementById('use-3d-toggle').classList.toggle('active', state.use3D);
-    document.getElementById('rotation-3d-options').style.display = state.use3D ? 'block' : 'none';
-    document.getElementById('rotation-3d-x').value = state.rotation3D.x;
-    document.getElementById('rotation-3d-x-value').textContent = state.rotation3D.x + '°';
-    document.getElementById('rotation-3d-y').value = state.rotation3D.y;
-    document.getElementById('rotation-3d-y-value').textContent = state.rotation3D.y + '°';
-    document.getElementById('rotation-3d-z').value = state.rotation3D.z;
-    document.getElementById('rotation-3d-z-value').textContent = state.rotation3D.z + '°';
-    document.getElementById('scale-3d').value = state.scale3D;
-    document.getElementById('scale-3d-value').textContent = state.scale3D + '%';
+    const use3D = ss.use3D || false;
+    const rotation3D = ss.rotation3D || { x: 0, y: 0, z: 0 };
+    document.getElementById('use-3d-toggle').classList.toggle('active', use3D);
+    document.getElementById('rotation-3d-options').style.display = use3D ? 'block' : 'none';
+    document.getElementById('rotation-3d-x').value = rotation3D.x;
+    document.getElementById('rotation-3d-x-value').textContent = rotation3D.x + '°';
+    document.getElementById('rotation-3d-y').value = rotation3D.y;
+    document.getElementById('rotation-3d-y-value').textContent = rotation3D.y + '°';
+    document.getElementById('rotation-3d-z').value = rotation3D.z;
+    document.getElementById('rotation-3d-z-value').textContent = rotation3D.z + '°';
 
     // Hide 2D-only settings in 3D mode
-    document.getElementById('2d-only-settings').style.display = state.use3D ? 'none' : 'block';
-    document.getElementById('position-presets-section').style.display = state.use3D ? 'none' : 'block';
+    document.getElementById('2d-only-settings').style.display = use3D ? 'none' : 'block';
+    document.getElementById('position-presets-section').style.display = use3D ? 'none' : 'block';
 
     // Show/hide 3D renderer
     if (typeof showThreeJS === 'function') {
-        showThreeJS(state.use3D);
+        showThreeJS(use3D);
     }
 }
 
@@ -1243,6 +1356,23 @@ function setupEventListeners() {
         handleFiles(e.dataTransfer.files);
     });
     fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+    // Set as Default button
+    document.getElementById('set-as-default-btn').addEventListener('click', () => {
+        if (state.screenshots.length === 0) return;
+        setCurrentScreenshotAsDefault();
+        // Show brief confirmation
+        const btn = document.getElementById('set-as-default-btn');
+        const originalText = btn.textContent;
+        btn.textContent = 'Saved!';
+        btn.style.borderColor = 'var(--accent)';
+        btn.style.color = 'var(--accent)';
+        setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.borderColor = '';
+            btn.style.color = '';
+        }, 1500);
+    });
 
     // Project controls
     document.getElementById('project-selector').addEventListener('change', (e) => {
@@ -1504,7 +1634,7 @@ function setupEventListeners() {
         btn.addEventListener('click', () => {
             document.querySelectorAll('#bg-type-selector button').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
-            state.background.type = btn.dataset.type;
+            setBackground('type', btn.dataset.type);
             
             document.getElementById('gradient-options').style.display = btn.dataset.type === 'gradient' ? 'block' : 'none';
             document.getElementById('solid-options').style.display = btn.dataset.type === 'solid' ? 'block' : 'none';
@@ -1526,17 +1656,18 @@ function setupEventListeners() {
             const colorMatches = gradientStr.matchAll(/(#[a-fA-F0-9]{6})\s+(\d+)%/g);
             
             if (angleMatch) {
-                state.background.gradient.angle = parseInt(angleMatch[1]);
-                document.getElementById('gradient-angle').value = state.background.gradient.angle;
-                document.getElementById('gradient-angle-value').textContent = state.background.gradient.angle + '°';
+                const angle = parseInt(angleMatch[1]);
+                setBackground('gradient.angle', angle);
+                document.getElementById('gradient-angle').value = angle;
+                document.getElementById('gradient-angle-value').textContent = angle + '°';
             }
-            
+
             const stops = [];
             for (const match of colorMatches) {
                 stops.push({ color: match[1], position: parseInt(match[2]) });
             }
             if (stops.length >= 2) {
-                state.background.gradient.stops = stops;
+                setBackground('gradient.stops', stops);
                 updateGradientStopsUI();
             }
             
@@ -1546,15 +1677,16 @@ function setupEventListeners() {
 
     // Gradient angle
     document.getElementById('gradient-angle').addEventListener('input', (e) => {
-        state.background.gradient.angle = parseInt(e.target.value);
+        setBackground('gradient.angle', parseInt(e.target.value));
         document.getElementById('gradient-angle-value').textContent = e.target.value + '°';
         updateCanvas();
     });
 
     // Add gradient stop
     document.getElementById('add-gradient-stop').addEventListener('click', () => {
-        const lastStop = state.background.gradient.stops[state.background.gradient.stops.length - 1];
-        state.background.gradient.stops.push({
+        const bg = getBackground();
+        const lastStop = bg.gradient.stops[bg.gradient.stops.length - 1];
+        bg.gradient.stops.push({
             color: lastStop.color,
             position: Math.min(lastStop.position + 20, 100)
         });
@@ -1564,13 +1696,13 @@ function setupEventListeners() {
 
     // Solid color
     document.getElementById('solid-color').addEventListener('input', (e) => {
-        state.background.solid = e.target.value;
+        setBackground('solid', e.target.value);
         document.getElementById('solid-color-hex').value = e.target.value;
         updateCanvas();
     });
     document.getElementById('solid-color-hex').addEventListener('input', (e) => {
         if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-            state.background.solid = e.target.value;
+            setBackground('solid', e.target.value);
             document.getElementById('solid-color').value = e.target.value;
             updateCanvas();
         }
@@ -1586,7 +1718,7 @@ function setupEventListeners() {
             reader.onload = (event) => {
                 const img = new Image();
                 img.onload = () => {
-                    state.background.image = img;
+                    setBackground('image', img);
                     document.getElementById('bg-image-preview').src = event.target.result;
                     document.getElementById('bg-image-preview').style.display = 'block';
                     updateCanvas();
@@ -1598,24 +1730,24 @@ function setupEventListeners() {
     });
 
     document.getElementById('bg-image-fit').addEventListener('change', (e) => {
-        state.background.imageFit = e.target.value;
+        setBackground('imageFit', e.target.value);
         updateCanvas();
     });
 
     document.getElementById('bg-blur').addEventListener('input', (e) => {
-        state.background.imageBlur = parseInt(e.target.value);
+        setBackground('imageBlur', parseInt(e.target.value));
         document.getElementById('bg-blur-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
 
     document.getElementById('bg-overlay-color').addEventListener('input', (e) => {
-        state.background.overlayColor = e.target.value;
+        setBackground('overlayColor', e.target.value);
         document.getElementById('bg-overlay-hex').value = e.target.value;
         updateCanvas();
     });
 
     document.getElementById('bg-overlay-opacity').addEventListener('input', (e) => {
-        state.background.overlayOpacity = parseInt(e.target.value);
+        setBackground('overlayOpacity', parseInt(e.target.value));
         document.getElementById('bg-overlay-opacity-value').textContent = e.target.value + '%';
         updateCanvas();
     });
@@ -1623,44 +1755,45 @@ function setupEventListeners() {
     // Noise toggle
     document.getElementById('noise-toggle').addEventListener('click', function() {
         this.classList.toggle('active');
-        state.background.noise = this.classList.contains('active');
-        document.getElementById('noise-options').style.display = state.background.noise ? 'block' : 'none';
+        const noiseEnabled = this.classList.contains('active');
+        setBackground('noise', noiseEnabled);
+        document.getElementById('noise-options').style.display = noiseEnabled ? 'block' : 'none';
         updateCanvas();
     });
 
     document.getElementById('noise-intensity').addEventListener('input', (e) => {
-        state.background.noiseIntensity = parseInt(e.target.value);
+        setBackground('noiseIntensity', parseInt(e.target.value));
         document.getElementById('noise-intensity-value').textContent = e.target.value + '%';
         updateCanvas();
     });
 
     // Screenshot settings
     document.getElementById('screenshot-scale').addEventListener('input', (e) => {
-        state.screenshot.scale = parseInt(e.target.value);
+        setScreenshotSetting('scale', parseInt(e.target.value));
         document.getElementById('screenshot-scale-value').textContent = e.target.value + '%';
         updateCanvas();
     });
 
     document.getElementById('screenshot-y').addEventListener('input', (e) => {
-        state.screenshot.y = parseInt(e.target.value);
+        setScreenshotSetting('y', parseInt(e.target.value));
         document.getElementById('screenshot-y-value').textContent = e.target.value + '%';
         updateCanvas();
     });
 
     document.getElementById('screenshot-x').addEventListener('input', (e) => {
-        state.screenshot.x = parseInt(e.target.value);
+        setScreenshotSetting('x', parseInt(e.target.value));
         document.getElementById('screenshot-x-value').textContent = e.target.value + '%';
         updateCanvas();
     });
 
     document.getElementById('corner-radius').addEventListener('input', (e) => {
-        state.screenshot.cornerRadius = parseInt(e.target.value);
+        setScreenshotSetting('cornerRadius', parseInt(e.target.value));
         document.getElementById('corner-radius-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
 
     document.getElementById('screenshot-rotation').addEventListener('input', (e) => {
-        state.screenshot.rotation = parseInt(e.target.value);
+        setScreenshotSetting('rotation', parseInt(e.target.value));
         document.getElementById('screenshot-rotation-value').textContent = e.target.value + '°';
         updateCanvas();
     });
@@ -1668,37 +1801,38 @@ function setupEventListeners() {
     // Shadow toggle
     document.getElementById('shadow-toggle').addEventListener('click', function() {
         this.classList.toggle('active');
-        state.screenshot.shadow.enabled = this.classList.contains('active');
-        document.getElementById('shadow-options').style.display = state.screenshot.shadow.enabled ? 'block' : 'none';
+        const shadowEnabled = this.classList.contains('active');
+        setScreenshotSetting('shadow.enabled', shadowEnabled);
+        document.getElementById('shadow-options').style.display = shadowEnabled ? 'block' : 'none';
         updateCanvas();
     });
 
     document.getElementById('shadow-color').addEventListener('input', (e) => {
-        state.screenshot.shadow.color = e.target.value;
+        setScreenshotSetting('shadow.color', e.target.value);
         document.getElementById('shadow-color-hex').value = e.target.value;
         updateCanvas();
     });
 
     document.getElementById('shadow-blur').addEventListener('input', (e) => {
-        state.screenshot.shadow.blur = parseInt(e.target.value);
+        setScreenshotSetting('shadow.blur', parseInt(e.target.value));
         document.getElementById('shadow-blur-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
 
     document.getElementById('shadow-opacity').addEventListener('input', (e) => {
-        state.screenshot.shadow.opacity = parseInt(e.target.value);
+        setScreenshotSetting('shadow.opacity', parseInt(e.target.value));
         document.getElementById('shadow-opacity-value').textContent = e.target.value + '%';
         updateCanvas();
     });
 
     document.getElementById('shadow-x').addEventListener('input', (e) => {
-        state.screenshot.shadow.x = parseInt(e.target.value);
+        setScreenshotSetting('shadow.x', parseInt(e.target.value));
         document.getElementById('shadow-x-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
 
     document.getElementById('shadow-y').addEventListener('input', (e) => {
-        state.screenshot.shadow.y = parseInt(e.target.value);
+        setScreenshotSetting('shadow.y', parseInt(e.target.value));
         document.getElementById('shadow-y-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
@@ -1706,58 +1840,41 @@ function setupEventListeners() {
     // Frame toggle
     document.getElementById('frame-toggle').addEventListener('click', function() {
         this.classList.toggle('active');
-        state.screenshot.frame.enabled = this.classList.contains('active');
-        document.getElementById('frame-options').style.display = state.screenshot.frame.enabled ? 'block' : 'none';
+        const frameEnabled = this.classList.contains('active');
+        setScreenshotSetting('frame.enabled', frameEnabled);
+        document.getElementById('frame-options').style.display = frameEnabled ? 'block' : 'none';
         updateCanvas();
     });
 
     document.getElementById('frame-style').addEventListener('change', (e) => {
-        state.screenshot.frame.style = e.target.value;
+        setScreenshotSetting('frame.style', e.target.value);
         updateCanvas();
     });
 
     document.getElementById('frame-color').addEventListener('input', (e) => {
-        state.screenshot.frame.color = e.target.value;
+        setScreenshotSetting('frame.color', e.target.value);
         document.getElementById('frame-color-hex').value = e.target.value;
         updateCanvas();
     });
 
     document.getElementById('frame-color-hex').addEventListener('input', (e) => {
         if (/^#[0-9A-Fa-f]{6}$/.test(e.target.value)) {
-            state.screenshot.frame.color = e.target.value;
+            setScreenshotSetting('frame.color', e.target.value);
             document.getElementById('frame-color').value = e.target.value;
             updateCanvas();
         }
     });
 
     document.getElementById('frame-width').addEventListener('input', (e) => {
-        state.screenshot.frame.width = parseInt(e.target.value);
+        setScreenshotSetting('frame.width', parseInt(e.target.value));
         document.getElementById('frame-width-value').textContent = e.target.value + 'px';
         updateCanvas();
     });
 
     document.getElementById('frame-opacity').addEventListener('input', (e) => {
-        state.screenshot.frame.opacity = parseInt(e.target.value);
+        setScreenshotSetting('frame.opacity', parseInt(e.target.value));
         document.getElementById('frame-opacity-value').textContent = e.target.value + '%';
         updateCanvas();
-    });
-
-    // Per-screenshot text toggle
-    document.getElementById('per-screenshot-text-toggle').addEventListener('click', function() {
-        this.classList.toggle('active');
-        const isPerScreenshot = this.classList.contains('active');
-        document.getElementById('tab-text').classList.toggle('per-screenshot-mode', isPerScreenshot);
-        
-        if (isPerScreenshot && state.screenshots.length > 0) {
-            // Initialize override for current screenshot if not exists
-            const screenshot = state.screenshots[state.selectedIndex];
-            if (!screenshot.overrides.text) {
-                screenshot.overrides.text = { ...state.text };
-            }
-            loadTextUIFromScreenshot();
-        } else {
-            loadTextUIFromGlobal();
-        }
     });
 
     // Text settings
@@ -1878,18 +1995,19 @@ function setupEventListeners() {
     // 3D mode toggle
     document.getElementById('use-3d-toggle').addEventListener('click', function() {
         this.classList.toggle('active');
-        state.use3D = this.classList.contains('active');
-        document.getElementById('rotation-3d-options').style.display = state.use3D ? 'block' : 'none';
+        const use3D = this.classList.contains('active');
+        setScreenshotSetting('use3D', use3D);
+        document.getElementById('rotation-3d-options').style.display = use3D ? 'block' : 'none';
 
         // Hide 2D-only settings in 3D mode
-        document.getElementById('2d-only-settings').style.display = state.use3D ? 'none' : 'block';
-        document.getElementById('position-presets-section').style.display = state.use3D ? 'none' : 'block';
+        document.getElementById('2d-only-settings').style.display = use3D ? 'none' : 'block';
+        document.getElementById('position-presets-section').style.display = use3D ? 'none' : 'block';
 
         if (typeof showThreeJS === 'function') {
-            showThreeJS(state.use3D);
+            showThreeJS(use3D);
         }
 
-        if (state.use3D && typeof updateScreenTexture === 'function') {
+        if (use3D && typeof updateScreenTexture === 'function') {
             updateScreenTexture();
         }
 
@@ -1898,45 +2016,42 @@ function setupEventListeners() {
 
     // 3D rotation controls
     document.getElementById('rotation-3d-x').addEventListener('input', (e) => {
-        state.rotation3D.x = parseInt(e.target.value);
+        const ss = getScreenshotSettings();
+        if (!ss.rotation3D) ss.rotation3D = { x: 0, y: 0, z: 0 };
+        ss.rotation3D.x = parseInt(e.target.value);
         document.getElementById('rotation-3d-x-value').textContent = e.target.value + '°';
         if (typeof setThreeJSRotation === 'function') {
-            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+            setThreeJSRotation(ss.rotation3D.x, ss.rotation3D.y, ss.rotation3D.z);
         }
         updateCanvas(); // Keep export canvas in sync
     });
 
     document.getElementById('rotation-3d-y').addEventListener('input', (e) => {
-        state.rotation3D.y = parseInt(e.target.value);
+        const ss = getScreenshotSettings();
+        if (!ss.rotation3D) ss.rotation3D = { x: 0, y: 0, z: 0 };
+        ss.rotation3D.y = parseInt(e.target.value);
         document.getElementById('rotation-3d-y-value').textContent = e.target.value + '°';
         if (typeof setThreeJSRotation === 'function') {
-            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+            setThreeJSRotation(ss.rotation3D.x, ss.rotation3D.y, ss.rotation3D.z);
         }
         updateCanvas(); // Keep export canvas in sync
     });
 
     document.getElementById('rotation-3d-z').addEventListener('input', (e) => {
-        state.rotation3D.z = parseInt(e.target.value);
+        const ss = getScreenshotSettings();
+        if (!ss.rotation3D) ss.rotation3D = { x: 0, y: 0, z: 0 };
+        ss.rotation3D.z = parseInt(e.target.value);
         document.getElementById('rotation-3d-z-value').textContent = e.target.value + '°';
         if (typeof setThreeJSRotation === 'function') {
-            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
-        }
-        updateCanvas(); // Keep export canvas in sync
-    });
-
-    document.getElementById('scale-3d').addEventListener('input', (e) => {
-        state.scale3D = parseInt(e.target.value);
-        document.getElementById('scale-3d-value').textContent = e.target.value + '%';
-        if (typeof setThreeJSScale === 'function') {
-            setThreeJSScale(state.scale3D);
+            setThreeJSRotation(ss.rotation3D.x, ss.rotation3D.y, ss.rotation3D.z);
         }
         updateCanvas(); // Keep export canvas in sync
     });
 }
 
-// Helper function to check if per-screenshot text mode is active
+// Per-screenshot mode is now always active (all settings are per-screenshot)
 function isPerScreenshotTextMode() {
-    return document.getElementById('per-screenshot-text-toggle').classList.contains('active');
+    return true;
 }
 
 // Language helper functions
@@ -2511,41 +2626,24 @@ function saveSettings() {
     }
 }
 
-// Helper function to set text value (global or per-screenshot)
+// Helper function to set text value for current screenshot
 function setTextValue(key, value) {
-    if (isPerScreenshotTextMode() && state.screenshots.length > 0) {
-        const screenshot = state.screenshots[state.selectedIndex];
-        if (!screenshot.overrides.text) {
-            screenshot.overrides.text = { ...state.text };
-        }
-        screenshot.overrides.text[key] = value;
-    } else {
-        state.text[key] = value;
-    }
+    setTextSetting(key, value);
 }
 
 // Helper function to get text settings for current screenshot
 function getTextSettings() {
-    if (state.screenshots.length > 0) {
-        const screenshot = state.screenshots[state.selectedIndex];
-        if (screenshot.overrides.text) {
-            return screenshot.overrides.text;
-        }
-    }
-    return state.text;
+    return getText();
 }
 
-// Load text UI from current screenshot's override
+// Load text UI from current screenshot's settings
 function loadTextUIFromScreenshot() {
-    if (state.screenshots.length === 0) return;
-    const screenshot = state.screenshots[state.selectedIndex];
-    const text = screenshot.overrides.text || state.text;
-    updateTextUI(text);
+    updateTextUI(getText());
 }
 
-// Load text UI from global settings
+// Load text UI from default settings
 function loadTextUIFromGlobal() {
-    updateTextUI(state.text);
+    updateTextUI(state.defaults.text);
 }
 
 // Update all text UI elements
@@ -2599,11 +2697,11 @@ function applyPositionPreset(preset) {
     const p = presets[preset];
     if (!p) return;
 
-    state.screenshot.scale = p.scale;
-    state.screenshot.x = p.x;
-    state.screenshot.y = p.y;
-    state.screenshot.rotation = p.rotation;
-    state.screenshot.perspective = p.perspective;
+    setScreenshotSetting('scale', p.scale);
+    setScreenshotSetting('x', p.x);
+    setScreenshotSetting('y', p.y);
+    setScreenshotSetting('rotation', p.rotation);
+    setScreenshotSetting('perspective', p.perspective);
 
     // Update UI controls
     document.getElementById('screenshot-scale').value = p.scale;
@@ -2632,11 +2730,15 @@ function handleFiles(files) {
                         deviceType = 'iPad';
                     }
 
+                    // Each screenshot gets its own copy of all settings from defaults
                     state.screenshots.push({
                         image: img,
                         name: file.name,
                         deviceType: deviceType,
-                        // Individual settings (can override global)
+                        background: JSON.parse(JSON.stringify(state.defaults.background)),
+                        screenshot: JSON.parse(JSON.stringify(state.defaults.screenshot)),
+                        text: JSON.parse(JSON.stringify(state.defaults.text)),
+                        // Legacy overrides for backwards compatibility
                         overrides: {}
                     });
 
@@ -2645,7 +2747,8 @@ function handleFiles(files) {
                         state.selectedIndex = 0;
                     }
                     // Update 3D texture if in 3D mode
-                    if (state.use3D && typeof updateScreenTexture === 'function') {
+                    const ss = getScreenshotSettings();
+                    if (ss.use3D && typeof updateScreenTexture === 'function') {
                         updateScreenTexture();
                     }
                     updateCanvas();
@@ -2661,15 +2764,33 @@ function updateScreenshotList() {
     screenshotList.innerHTML = '';
     noScreenshot.style.display = state.screenshots.length === 0 ? 'block' : 'none';
 
+    // Show transfer mode hint if active
+    if (state.transferTarget !== null && state.screenshots.length > 1) {
+        const hint = document.createElement('div');
+        hint.className = 'transfer-hint';
+        hint.innerHTML = `
+            <span>Select a screenshot to copy style from</span>
+            <button class="transfer-cancel" onclick="cancelTransfer()">Cancel</button>
+        `;
+        screenshotList.appendChild(hint);
+    }
+
     state.screenshots.forEach((screenshot, index) => {
         const item = document.createElement('div');
-        item.className = 'screenshot-item' + (index === state.selectedIndex ? ' selected' : '');
-        item.innerHTML = `
-            <img class="screenshot-thumb" src="${screenshot.image.src}" alt="${screenshot.name}">
-            <div class="screenshot-info">
-                <div class="screenshot-name">${screenshot.name}</div>
-                <div class="screenshot-device">${screenshot.deviceType}</div>
-            </div>
+        const isTransferTarget = state.transferTarget === index;
+        const isTransferMode = state.transferTarget !== null;
+        item.className = 'screenshot-item' +
+            (index === state.selectedIndex ? ' selected' : '') +
+            (isTransferTarget ? ' transfer-target' : '') +
+            (isTransferMode && !isTransferTarget ? ' transfer-source-option' : '');
+
+        // Show different UI in transfer mode
+        const buttonsHtml = isTransferMode ? '' : `
+            <button class="screenshot-transfer" data-index="${index}" title="Transfer style from another screenshot">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12l7-7 7 7"/>
+                </svg>
+            </button>
             <button class="screenshot-delete" data-index="${index}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M18 6L6 18M6 6l12 12"/>
@@ -2677,41 +2798,122 @@ function updateScreenshotList() {
             </button>
         `;
 
-        item.addEventListener('click', (e) => {
-            if (!e.target.closest('.screenshot-delete')) {
-                state.selectedIndex = index;
-                updateScreenshotList();
-                // Update text UI if in per-screenshot mode
-                if (isPerScreenshotTextMode()) {
-                    loadTextUIFromScreenshot();
-                }
-                // Update 3D texture if in 3D mode
-                if (state.use3D && typeof updateScreenTexture === 'function') {
-                    updateScreenTexture();
-                }
-                updateCanvas();
-            }
-        });
+        item.innerHTML = `
+            <img class="screenshot-thumb" src="${screenshot.image.src}" alt="${screenshot.name}">
+            <div class="screenshot-info">
+                <div class="screenshot-name">${screenshot.name}</div>
+                <div class="screenshot-device">${isTransferTarget ? 'Click source to copy style' : screenshot.deviceType}</div>
+            </div>
+            ${buttonsHtml}
+        `;
 
-        item.querySelector('.screenshot-delete').addEventListener('click', (e) => {
-            e.stopPropagation();
-            state.screenshots.splice(index, 1);
-            if (state.selectedIndex >= state.screenshots.length) {
-                state.selectedIndex = Math.max(0, state.screenshots.length - 1);
+        item.addEventListener('click', (e) => {
+            if (e.target.closest('.screenshot-delete') || e.target.closest('.screenshot-transfer')) {
+                return;
             }
+
+            // Handle transfer mode click
+            if (state.transferTarget !== null) {
+                if (index !== state.transferTarget) {
+                    // Transfer style from clicked screenshot to target
+                    transferStyle(index, state.transferTarget);
+                }
+                return;
+            }
+
+            // Normal selection
+            state.selectedIndex = index;
             updateScreenshotList();
+            // Sync all UI with current screenshot's settings
+            syncUIWithState();
+            updateGradientStopsUI();
+            // Update 3D texture if in 3D mode
+            const ss = getScreenshotSettings();
+            if (ss.use3D && typeof updateScreenTexture === 'function') {
+                updateScreenTexture();
+            }
             updateCanvas();
         });
 
+        // Transfer button handler
+        const transferBtn = item.querySelector('.screenshot-transfer');
+        if (transferBtn) {
+            transferBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.transferTarget = index;
+                updateScreenshotList();
+            });
+        }
+
+        // Delete button handler
+        const deleteBtn = item.querySelector('.screenshot-delete');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                state.screenshots.splice(index, 1);
+                if (state.selectedIndex >= state.screenshots.length) {
+                    state.selectedIndex = Math.max(0, state.screenshots.length - 1);
+                }
+                updateScreenshotList();
+                syncUIWithState();
+                updateGradientStopsUI();
+                updateCanvas();
+            });
+        }
+
         screenshotList.appendChild(item);
     });
+}
+
+function cancelTransfer() {
+    state.transferTarget = null;
+    updateScreenshotList();
+}
+
+function transferStyle(sourceIndex, targetIndex) {
+    const source = state.screenshots[sourceIndex];
+    const target = state.screenshots[targetIndex];
+
+    if (!source || !target) {
+        state.transferTarget = null;
+        updateScreenshotList();
+        return;
+    }
+
+    // Deep copy background settings
+    target.background = JSON.parse(JSON.stringify(source.background));
+    // Handle background image separately (not JSON serializable)
+    if (source.background.image) {
+        target.background.image = source.background.image;
+    }
+
+    // Deep copy screenshot settings
+    target.screenshot = JSON.parse(JSON.stringify(source.screenshot));
+
+    // Copy text styling but preserve actual text content
+    const targetHeadlines = target.text.headlines;
+    const targetSubheadlines = target.text.subheadlines;
+    target.text = JSON.parse(JSON.stringify(source.text));
+    // Restore original text content
+    target.text.headlines = targetHeadlines;
+    target.text.subheadlines = targetSubheadlines;
+
+    // Reset transfer mode
+    state.transferTarget = null;
+
+    // Update UI
+    updateScreenshotList();
+    syncUIWithState();
+    updateGradientStopsUI();
+    updateCanvas();
 }
 
 function updateGradientStopsUI() {
     const container = document.getElementById('gradient-stops');
     container.innerHTML = '';
 
-    state.background.gradient.stops.forEach((stop, index) => {
+    const bg = getBackground();
+    bg.gradient.stops.forEach((stop, index) => {
         const div = document.createElement('div');
         div.className = 'gradient-stop';
         div.innerHTML = `
@@ -2726,19 +2928,22 @@ function updateGradientStopsUI() {
         `;
 
         div.querySelector('input[type="color"]').addEventListener('input', (e) => {
-            state.background.gradient.stops[index].color = e.target.value;
+            const currentBg = getBackground();
+            currentBg.gradient.stops[index].color = e.target.value;
             updateCanvas();
         });
 
         div.querySelector('input[type="number"]').addEventListener('input', (e) => {
-            state.background.gradient.stops[index].position = parseInt(e.target.value);
+            const currentBg = getBackground();
+            currentBg.gradient.stops[index].position = parseInt(e.target.value);
             updateCanvas();
         });
 
         const deleteBtn = div.querySelector('.screenshot-delete');
         if (deleteBtn) {
             deleteBtn.addEventListener('click', () => {
-                state.background.gradient.stops.splice(index, 1);
+                const currentBg = getBackground();
+                currentBg.gradient.stops.splice(index, 1);
                 updateGradientStopsUI();
                 updateCanvas();
             });
@@ -2772,19 +2977,21 @@ function updateCanvas() {
     drawBackground();
 
     // Draw noise overlay on background if enabled
-    if (state.background.noise) {
+    if (getBackground().noise) {
         drawNoise();
     }
 
     // Draw screenshot (2D mode) or 3D phone model
     if (state.screenshots.length > 0) {
-        if (state.use3D && typeof renderThreeJSToCanvas === 'function' && phoneModelLoaded) {
+        const ss = getScreenshotSettings();
+        const use3D = ss.use3D || false;
+        if (use3D && typeof renderThreeJSToCanvas === 'function' && phoneModelLoaded) {
             // In 3D mode, update the screen texture and render the phone model
             if (typeof updateScreenTexture === 'function') {
                 updateScreenTexture();
             }
             renderThreeJSToCanvas(canvas, dims.width, dims.height);
-        } else if (!state.use3D) {
+        } else if (!use3D) {
             // In 2D mode, draw the screenshot normally
             drawScreenshot();
         }
@@ -2796,30 +3003,31 @@ function updateCanvas() {
 
 function drawBackground() {
     const dims = getCanvasDimensions();
+    const bg = getBackground();
 
-    if (state.background.type === 'gradient') {
-        const angle = state.background.gradient.angle * Math.PI / 180;
+    if (bg.type === 'gradient') {
+        const angle = bg.gradient.angle * Math.PI / 180;
         const x1 = dims.width / 2 - Math.cos(angle) * dims.width;
         const y1 = dims.height / 2 - Math.sin(angle) * dims.height;
         const x2 = dims.width / 2 + Math.cos(angle) * dims.width;
         const y2 = dims.height / 2 + Math.sin(angle) * dims.height;
 
         const gradient = ctx.createLinearGradient(x1, y1, x2, y2);
-        state.background.gradient.stops.forEach(stop => {
+        bg.gradient.stops.forEach(stop => {
             gradient.addColorStop(stop.position / 100, stop.color);
         });
 
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, dims.width, dims.height);
-    } else if (state.background.type === 'solid') {
-        ctx.fillStyle = state.background.solid;
+    } else if (bg.type === 'solid') {
+        ctx.fillStyle = bg.solid;
         ctx.fillRect(0, 0, dims.width, dims.height);
-    } else if (state.background.type === 'image' && state.background.image) {
-        const img = state.background.image;
+    } else if (bg.type === 'image' && bg.image) {
+        const img = bg.image;
         let sx = 0, sy = 0, sw = img.width, sh = img.height;
         let dx = 0, dy = 0, dw = dims.width, dh = dims.height;
 
-        if (state.background.imageFit === 'cover') {
+        if (bg.imageFit === 'cover') {
             const imgRatio = img.width / img.height;
             const canvasRatio = dims.width / dims.height;
 
@@ -2830,7 +3038,7 @@ function drawBackground() {
                 sh = img.width / canvasRatio;
                 sy = (img.height - sh) / 2;
             }
-        } else if (state.background.imageFit === 'contain') {
+        } else if (bg.imageFit === 'contain') {
             const imgRatio = img.width / img.height;
             const canvasRatio = dims.width / dims.height;
 
@@ -2846,17 +3054,17 @@ function drawBackground() {
             ctx.fillRect(0, 0, dims.width, dims.height);
         }
 
-        if (state.background.imageBlur > 0) {
-            ctx.filter = `blur(${state.background.imageBlur}px)`;
+        if (bg.imageBlur > 0) {
+            ctx.filter = `blur(${bg.imageBlur}px)`;
         }
 
         ctx.drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh);
         ctx.filter = 'none';
 
         // Overlay
-        if (state.background.overlayOpacity > 0) {
-            ctx.fillStyle = state.background.overlayColor;
-            ctx.globalAlpha = state.background.overlayOpacity / 100;
+        if (bg.overlayOpacity > 0) {
+            ctx.fillStyle = bg.overlayColor;
+            ctx.globalAlpha = bg.overlayOpacity / 100;
             ctx.fillRect(0, 0, dims.width, dims.height);
             ctx.globalAlpha = 1;
         }
@@ -2869,8 +3077,9 @@ function drawScreenshot() {
     if (!screenshot) return;
 
     const img = screenshot.image;
-    const scale = state.screenshot.scale / 100;
-    
+    const settings = getScreenshotSettings();
+    const scale = settings.scale / 100;
+
     // Calculate scaled dimensions
     let imgWidth = dims.width * scale;
     let imgHeight = (img.height / img.width) * imgWidth;
@@ -2881,8 +3090,8 @@ function drawScreenshot() {
         imgWidth = (img.width / img.height) * imgHeight;
     }
 
-    const x = (dims.width - imgWidth) * (state.screenshot.x / 100);
-    const y = (dims.height - imgHeight) * (state.screenshot.y / 100);
+    const x = (dims.width - imgWidth) * (settings.x / 100);
+    const y = (dims.height - imgHeight) * (settings.y / 100);
 
     // Center point for transformations
     const centerX = x + imgWidth / 2;
@@ -2892,37 +3101,37 @@ function drawScreenshot() {
 
     // Apply transformations
     ctx.translate(centerX, centerY);
-    
+
     // Apply rotation
-    if (state.screenshot.rotation !== 0) {
-        ctx.rotate(state.screenshot.rotation * Math.PI / 180);
+    if (settings.rotation !== 0) {
+        ctx.rotate(settings.rotation * Math.PI / 180);
     }
 
     // Apply perspective (simulated with scale transform)
-    if (state.screenshot.perspective !== 0) {
-        const perspectiveScale = 1 - Math.abs(state.screenshot.perspective) * 0.005;
-        ctx.transform(1, state.screenshot.perspective * 0.01, 0, 1, 0, 0);
+    if (settings.perspective !== 0) {
+        const perspectiveScale = 1 - Math.abs(settings.perspective) * 0.005;
+        ctx.transform(1, settings.perspective * 0.01, 0, 1, 0, 0);
     }
 
     ctx.translate(-centerX, -centerY);
 
     // Draw rounded rectangle with screenshot
-    const radius = state.screenshot.cornerRadius * (imgWidth / 400); // Scale radius with image
+    const radius = settings.cornerRadius * (imgWidth / 400); // Scale radius with image
 
     // Draw shadow first (needs a filled shape, not clipped)
-    if (state.screenshot.shadow.enabled) {
-        const shadowColor = hexToRgba(state.screenshot.shadow.color, state.screenshot.shadow.opacity / 100);
+    if (settings.shadow.enabled) {
+        const shadowColor = hexToRgba(settings.shadow.color, settings.shadow.opacity / 100);
         ctx.shadowColor = shadowColor;
-        ctx.shadowBlur = state.screenshot.shadow.blur;
-        ctx.shadowOffsetX = state.screenshot.shadow.x;
-        ctx.shadowOffsetY = state.screenshot.shadow.y;
-        
+        ctx.shadowBlur = settings.shadow.blur;
+        ctx.shadowOffsetX = settings.shadow.x;
+        ctx.shadowOffsetY = settings.shadow.y;
+
         // Draw filled rounded rect for shadow
         ctx.fillStyle = '#000';
         ctx.beginPath();
         roundRect(ctx, x, y, imgWidth, imgHeight, radius);
         ctx.fill();
-        
+
         // Reset shadow before drawing image
         ctx.shadowColor = 'transparent';
         ctx.shadowBlur = 0;
@@ -2935,18 +3144,18 @@ function drawScreenshot() {
     roundRect(ctx, x, y, imgWidth, imgHeight, radius);
     ctx.clip();
     ctx.drawImage(img, x, y, imgWidth, imgHeight);
-    
+
     ctx.restore();
 
     // Draw device frame if enabled (needs separate transform context)
-    if (state.screenshot.frame.enabled) {
+    if (settings.frame.enabled) {
         ctx.save();
         ctx.translate(centerX, centerY);
-        if (state.screenshot.rotation !== 0) {
-            ctx.rotate(state.screenshot.rotation * Math.PI / 180);
+        if (settings.rotation !== 0) {
+            ctx.rotate(settings.rotation * Math.PI / 180);
         }
-        if (state.screenshot.perspective !== 0) {
-            ctx.transform(1, state.screenshot.perspective * 0.01, 0, 1, 0, 0);
+        if (settings.perspective !== 0) {
+            ctx.transform(1, settings.perspective * 0.01, 0, 1, 0, 0);
         }
         ctx.translate(-centerX, -centerY);
         drawDeviceFrame(x, y, imgWidth, imgHeight);
@@ -2955,10 +3164,11 @@ function drawScreenshot() {
 }
 
 function drawDeviceFrame(x, y, width, height) {
-    const frameColor = state.screenshot.frame.color;
-    const frameWidth = state.screenshot.frame.width * (width / 400); // Scale with image
-    const frameOpacity = state.screenshot.frame.opacity / 100;
-    const radius = state.screenshot.cornerRadius * (width / 400) + frameWidth;
+    const settings = getScreenshotSettings();
+    const frameColor = settings.frame.color;
+    const frameWidth = settings.frame.width * (width / 400); // Scale with image
+    const frameOpacity = settings.frame.opacity / 100;
+    const radius = settings.cornerRadius * (width / 400) + frameWidth;
 
     ctx.globalAlpha = frameOpacity;
     ctx.strokeStyle = frameColor;
@@ -2968,13 +3178,13 @@ function drawDeviceFrame(x, y, width, height) {
     ctx.stroke();
 
     // Draw notch or dynamic island for iPhones (not for simple style)
-    if (state.screenshot.frame.style !== 'simple' && state.screenshot.frame.style.includes('iphone')) {
+    if (settings.frame.style !== 'simple' && settings.frame.style.includes('iphone')) {
         const notchWidth = width * 0.35;
         const notchHeight = height * 0.035;
         const notchX = x + (width - notchWidth) / 2;
         const notchY = y + frameWidth;
 
-        if (state.screenshot.frame.style.includes('pro') || state.screenshot.frame.style === 'iphone-15') {
+        if (settings.frame.style.includes('pro') || settings.frame.style === 'iphone-15') {
             // Dynamic Island
             const islandWidth = width * 0.25;
             const islandHeight = height * 0.025;
@@ -3104,7 +3314,7 @@ function drawNoise() {
     const dims = getCanvasDimensions();
     const imageData = ctx.getImageData(0, 0, dims.width, dims.height);
     const data = imageData.data;
-    const intensity = state.background.noiseIntensity / 100 * 50;
+    const intensity = getBackground().noiseIntensity / 100 * 50;
 
     for (let i = 0; i < data.length; i += 4) {
         const noise = (Math.random() - 0.5) * intensity;

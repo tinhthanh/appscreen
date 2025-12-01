@@ -101,9 +101,9 @@ function loadPhoneModel() {
             // Center the model
             phoneModel.position.sub(center);
 
-            // Scale to fit view
+            // Scale to fit view (3.75 = 2.5 * 1.5 to match 2D scale at 100%)
             const maxDim = Math.max(size.x, size.y, size.z);
-            baseModelScale = 2.5 / maxDim;
+            baseModelScale = 3.75 / maxDim;
             phoneModel.scale.setScalar(baseModelScale);
 
             // Log all meshes to help identify the screen
@@ -164,8 +164,9 @@ function loadPhoneModel() {
             // Apply initial settings from state
             if (typeof state !== 'undefined') {
                 updateThreeJSBackground();
-                setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
-                setThreeJSScale(state.scale3D);
+                const ss = typeof getScreenshotSettings === 'function' ? getScreenshotSettings() : state.defaults?.screenshot;
+                const rotation3D = ss?.rotation3D || { x: 0, y: 0, z: 0 };
+                setThreeJSRotation(rotation3D.x, rotation3D.y, rotation3D.z);
 
                 // Apply screenshot texture
                 if (state.screenshots.length > 0) {
@@ -173,7 +174,8 @@ function loadPhoneModel() {
                 }
 
                 // Refresh canvas now that model is loaded
-                if (state.use3D && typeof updateCanvas === 'function') {
+                const use3D = ss?.use3D || false;
+                if (use3D && typeof updateCanvas === 'function') {
                     updateCanvas();
                 }
             }
@@ -335,19 +337,22 @@ function renderThreeJSToCanvas(targetCanvas, width, height) {
     const originalPosition = phoneModel.position.clone();
     const originalScale = phoneModel.scale.clone();
 
-    // Apply position from state.screenshot settings
+    // Apply position from screenshot settings
     if (typeof state !== 'undefined') {
-        // Scale: use screenshot.scale to adjust model size (combined with scale3D)
-        const screenshotScale = state.screenshot.scale / 100;
-        const scale3D = state.scale3D / 100;
-        phoneModel.scale.setScalar(baseModelScale * scale3D * screenshotScale);
+        // Use getScreenshotSettings() helper if available, otherwise fall back to defaults
+        const ss = typeof getScreenshotSettings === 'function' ? getScreenshotSettings() : state.defaults?.screenshot;
+        if (ss) {
+            // Scale: use screenshot.scale to adjust model size
+            const screenshotScale = ss.scale / 100;
+            phoneModel.scale.setScalar(baseModelScale * screenshotScale);
 
-        // Position: convert percentage to 3D space offset
-        // X: 0% = left, 50% = center, 100% = right
-        // Y: 0% = top, 50% = center, 100% = bottom
-        const xOffset = ((state.screenshot.x - 50) / 50) * 2; // -2 to 2 range
-        const yOffset = -((state.screenshot.y - 50) / 50) * 3; // -3 to 3 range (inverted for 3D)
-        phoneModel.position.set(xOffset, yOffset, 0);
+            // Position: convert percentage to 3D space offset
+            // X: 0% = left, 50% = center, 100% = right
+            // Y: 0% = top, 50% = center, 100% = bottom
+            const xOffset = ((ss.x - 50) / 50) * 2; // -2 to 2 range
+            const yOffset = -((ss.y - 50) / 50) * 3; // -3 to 3 range (inverted for 3D)
+            phoneModel.position.set(xOffset, yOffset, 0);
+        }
     }
 
     // Set transparent background for compositing
@@ -393,12 +398,13 @@ function showThreeJS(show) {
         initThreeJS();
     }
 
-    // Apply current rotation, scale, background
+    // Apply current rotation and background
     if (show && typeof state !== 'undefined') {
         updateThreeJSBackground();
         if (phoneModel) {
-            setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
-            setThreeJSScale(state.scale3D);
+            const ss = typeof getScreenshotSettings === 'function' ? getScreenshotSettings() : state.defaults?.screenshot;
+            const rotation3D = ss?.rotation3D || { x: 0, y: 0, z: 0 };
+            setThreeJSRotation(rotation3D.x, rotation3D.y, rotation3D.z);
             updateScreenTexture();
         }
     }
@@ -413,11 +419,15 @@ function getThreeJSCanvas() {
 function updateThreeJSBackground() {
     if (!threeScene || typeof state === 'undefined') return;
 
-    if (state.background.type === 'solid') {
-        threeScene.background = new THREE.Color(state.background.solid);
-    } else if (state.background.type === 'gradient') {
+    // Use getBackground() helper if available, otherwise fall back to defaults
+    const bg = typeof getBackground === 'function' ? getBackground() : state.defaults?.background;
+    if (!bg) return;
+
+    if (bg.type === 'solid') {
+        threeScene.background = new THREE.Color(bg.solid);
+    } else if (bg.type === 'gradient') {
         // Use the first gradient color as background (Three.js doesn't support gradients natively)
-        const firstStop = state.background.gradient.stops[0];
+        const firstStop = bg.gradient.stops[0];
         if (firstStop) {
             threeScene.background = new THREE.Color(firstStop.color);
         }
@@ -439,42 +449,70 @@ function disposeThreeJS() {
     phoneModelLoaded = false;
 }
 
-// Interactive rotation for 2D canvas in 3D mode
+// Interactive rotation/movement for 2D canvas in 3D mode
 let isDragging3D = false;
+let isAltDragging = false;
 let lastMouseX = 0;
 let lastMouseY = 0;
+
+function getUse3D() {
+    if (typeof getScreenshotSettings === 'function') {
+        const ss = getScreenshotSettings();
+        return ss?.use3D || false;
+    }
+    return state.defaults?.screenshot?.use3D || false;
+}
 
 function setup3DCanvasInteraction() {
     const canvas = document.getElementById('preview-canvas');
     if (!canvas) return;
 
     canvas.addEventListener('mousedown', (e) => {
-        if (typeof state !== 'undefined' && state.use3D) {
+        if (typeof state !== 'undefined' && getUse3D()) {
             isDragging3D = true;
+            isAltDragging = e.altKey;
             lastMouseX = e.clientX;
             lastMouseY = e.clientY;
-            canvas.style.cursor = 'grabbing';
+            canvas.style.cursor = isAltDragging ? 'move' : 'grabbing';
         }
     });
 
     canvas.addEventListener('mousemove', (e) => {
-        if (!isDragging3D || typeof state === 'undefined' || !state.use3D) return;
+        if (!isDragging3D || typeof state === 'undefined' || !getUse3D()) return;
 
         const deltaX = e.clientX - lastMouseX;
         const deltaY = e.clientY - lastMouseY;
 
-        // Update rotation based on mouse movement
-        state.rotation3D.y = Math.max(-45, Math.min(45, state.rotation3D.y + deltaX * 0.5));
-        state.rotation3D.x = Math.max(-45, Math.min(45, state.rotation3D.x + deltaY * 0.5));
+        // Get current screenshot settings
+        const ss = typeof getScreenshotSettings === 'function' ? getScreenshotSettings() : state.defaults?.screenshot;
+        if (!ss) return;
 
-        // Update sliders
-        document.getElementById('rotation-3d-y').value = state.rotation3D.y;
-        document.getElementById('rotation-3d-y-value').textContent = Math.round(state.rotation3D.y) + '°';
-        document.getElementById('rotation-3d-x').value = state.rotation3D.x;
-        document.getElementById('rotation-3d-x-value').textContent = Math.round(state.rotation3D.x) + '°';
+        if (isAltDragging) {
+            // Alt+drag: move position (x, y)
+            ss.x = Math.max(0, Math.min(100, ss.x + deltaX * 0.2));
+            ss.y = Math.max(0, Math.min(100, ss.y + deltaY * 0.2));
 
-        // Apply rotation
-        setThreeJSRotation(state.rotation3D.x, state.rotation3D.y, state.rotation3D.z);
+            // Update sliders
+            document.getElementById('screenshot-x').value = ss.x;
+            document.getElementById('screenshot-x-value').textContent = Math.round(ss.x) + '%';
+            document.getElementById('screenshot-y').value = ss.y;
+            document.getElementById('screenshot-y-value').textContent = Math.round(ss.y) + '%';
+        } else {
+            // Regular drag: rotate
+            if (!ss.rotation3D) ss.rotation3D = { x: 0, y: 0, z: 0 };
+
+            ss.rotation3D.y = Math.max(-45, Math.min(45, ss.rotation3D.y + deltaX * 0.5));
+            ss.rotation3D.x = Math.max(-45, Math.min(45, ss.rotation3D.x + deltaY * 0.5));
+
+            // Update sliders
+            document.getElementById('rotation-3d-y').value = ss.rotation3D.y;
+            document.getElementById('rotation-3d-y-value').textContent = Math.round(ss.rotation3D.y) + '°';
+            document.getElementById('rotation-3d-x').value = ss.rotation3D.x;
+            document.getElementById('rotation-3d-x-value').textContent = Math.round(ss.rotation3D.x) + '°';
+
+            // Apply rotation
+            setThreeJSRotation(ss.rotation3D.x, ss.rotation3D.y, ss.rotation3D.z);
+        }
 
         // Update canvas
         if (typeof updateCanvas === 'function') {
@@ -488,20 +526,22 @@ function setup3DCanvasInteraction() {
     canvas.addEventListener('mouseup', () => {
         if (isDragging3D) {
             isDragging3D = false;
-            canvas.style.cursor = '';
+            isAltDragging = false;
+            canvas.style.cursor = getUse3D() ? 'grab' : '';
         }
     });
 
     canvas.addEventListener('mouseleave', () => {
         if (isDragging3D) {
             isDragging3D = false;
+            isAltDragging = false;
             canvas.style.cursor = '';
         }
     });
 
     // Change cursor when hovering in 3D mode
     canvas.addEventListener('mouseenter', () => {
-        if (typeof state !== 'undefined' && state.use3D) {
+        if (typeof state !== 'undefined' && getUse3D()) {
             canvas.style.cursor = 'grab';
         }
     });

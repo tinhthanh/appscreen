@@ -92,6 +92,10 @@
                 <!-- Screenshots will be added here -->
             </div>
 
+            <button class="set-default-btn" id="set-as-default-btn" title="Save current screenshot's settings as defaults for new screenshots">
+                Set as Default
+            </button>
+
             <div class="divider"></div>
 
             <h2>Output Size</h2>
@@ -320,14 +324,7 @@
                             <span class="range-value" id="rotation-3d-z-value">0°</span>
                         </div>
                     </div>
-                    <div class="control-group">
-                        <label class="control-label">3D Scale</label>
-                        <div class="control-row">
-                            <input type="range" id="scale-3d" min="30" max="150" value="100">
-                            <span class="range-value" id="scale-3d-value">100%</span>
-                        </div>
-                    </div>
-                    <p class="hint-text">Tip: Drag on the preview to rotate the device interactively.</p>
+                    <p class="hint-text">Tip: Drag to rotate, Alt+drag to move position.</p>
                 </div>
 
                 <div id="position-presets-section">
@@ -530,16 +527,6 @@
 
             <!-- Text Tab -->
             <div class="tab-content" id="tab-text">
-                <div class="control-group">
-                    <div class="toggle-row">
-                        <span class="toggle-label">Custom text for this screenshot</span>
-                        <div class="toggle" id="per-screenshot-text-toggle"></div>
-                    </div>
-                    <p class="hint-text" id="per-screenshot-hint">When enabled, text settings only apply to the currently selected screenshot.</p>
-                </div>
-
-                <div class="divider"></div>
-
                 <div class="control-group">
                     <div class="label-with-action">
                         <label class="control-label">Headline</label>
@@ -781,6 +768,24 @@
             <div class="modal-buttons">
                 <button class="modal-btn modal-btn-cancel" id="delete-project-cancel">Cancel</button>
                 <button class="modal-btn modal-btn-confirm" id="delete-project-confirm">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migration Modal -->
+    <div class="modal-overlay" id="migration-modal">
+        <div class="modal">
+            <div class="modal-icon modal-icon-info">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+            </div>
+            <h3 class="modal-title">Old Project Format Detected</h3>
+            <p class="modal-message">This project uses an older format where all screenshots share the same settings. The new format allows each screenshot to have its own background, position, and text settings.</p>
+            <p class="modal-message" style="margin-top: 8px;">Would you like to convert this project to the new format?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-cancel" onclick="hideMigrationPrompt()">Keep Old Format</button>
+                <button class="modal-btn modal-btn-primary" onclick="convertProject()">Convert Project</button>
             </div>
         </div>
     </div>
