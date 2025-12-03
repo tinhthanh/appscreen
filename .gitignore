@@ -7,5 +7,15 @@
 *.swp
 *.swo
 
-# Local server files
+# Node
 node_modules/
+package-lock.json
+
+# Electron build output
+dist/
+out/
+*.dmg
+*.exe
+*.AppImage
+*.deb
+*.snap

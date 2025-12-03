@@ -1,0 +1,80 @@
+{
+  "name": "yuzu.shot",
+  "version": "1.0.0",
+  "description": "App Store Screenshot Generator - Create beautiful App Store marketing screenshots",
+  "main": "electron/main.js",
+  "author": "Stefan from yuzuhub.com",
+  "license": "MIT",
+  "homepage": "https://yuzu-hub.github.io/appscreen/",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/YUZU-Hub/appscreen"
+  },
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --dev",
+    "build": "electron-builder",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:linux": "electron-builder --linux",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.yuzuhub.yuzushot",
+    "productName": "yuzu.shot",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!dist/**",
+      "!.git/**",
+      "!.gitignore",
+      "!.claude/**",
+      "!*.md",
+      "!.DS_Store"
+    ],
+    "mac": {
+      "category": "public.app-category.graphics-design",
+      "icon": "img/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "icon": "img/icon.ico",
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "linux": {
+      "icon": "img/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Graphics"
+    },
+    "dmg": {
+      "title": "${productName}",
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}
