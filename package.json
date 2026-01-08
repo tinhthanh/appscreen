@@ -3,7 +3,11 @@
   "version": "1.0.0",
   "description": "App Store Screenshot Generator - Create beautiful App Store marketing screenshots",
   "main": "electron/main.js",
-  "author": "Stefan from yuzuhub.com",
+  "author": {
+    "name": "YUZUHub",
+    "email": "hello@yuzuhub.com",
+    "url": "https://yuzuhub.com"
+  },
   "license": "MIT",
   "homepage": "https://yuzu-hub.github.io/appscreen/",
   "repository": {
