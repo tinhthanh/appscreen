@@ -1402,7 +1402,7 @@ function renameProject(newName) {
 // Delete current project
 async function deleteProject() {
     if (projects.length <= 1) {
-        alert('Cannot delete the only project');
+        await showAppAlert('Cannot delete the only project', 'info');
         return;
     }
 
@@ -1697,13 +1697,13 @@ function setupEventListeners() {
         document.getElementById('project-name-input').focus();
     });
 
-    document.getElementById('delete-project-btn').addEventListener('click', () => {
+    document.getElementById('delete-project-btn').addEventListener('click', async () => {
         if (projects.length <= 1) {
-            alert('Cannot delete the only project');
+            await showAppAlert('Cannot delete the only project', 'info');
             return;
         }
         const project = projects.find(p => p.id === currentProjectId);
-        document.getElementById('delete-project-message').textContent = 
+        document.getElementById('delete-project-message').textContent =
             `Are you sure you want to delete "${project ? project.name : 'this project'}"? This cannot be undone.`;
         document.getElementById('delete-project-modal').classList.add('visible');
     });
@@ -1713,20 +1713,20 @@ function setupEventListeners() {
         document.getElementById('project-modal').classList.remove('visible');
     });
 
-    document.getElementById('project-modal-confirm').addEventListener('click', () => {
+    document.getElementById('project-modal-confirm').addEventListener('click', async () => {
         const name = document.getElementById('project-name-input').value.trim();
         if (!name) {
-            alert('Please enter a project name');
+            await showAppAlert('Please enter a project name', 'info');
             return;
         }
-        
+
         const mode = document.getElementById('project-modal').dataset.mode;
         if (mode === 'new') {
             createProject(name);
         } else if (mode === 'rename') {
             renameProject(name);
         }
-        
+
         document.getElementById('project-modal').classList.remove('visible');
     });
 
@@ -5432,9 +5432,9 @@ function hexToRgba(hex, alpha) {
     return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
-function exportCurrent() {
+async function exportCurrent() {
     if (state.screenshots.length === 0) {
-        alert('Please upload a screenshot first');
+        await showAppAlert('Please upload a screenshot first', 'info');
         return;
     }
 
@@ -5449,7 +5449,7 @@ function exportCurrent() {
 
 async function exportAll() {
     if (state.screenshots.length === 0) {
-        alert('Please upload screenshots first');
+        await showAppAlert('Please upload screenshots first', 'info');
         return;
     }
 
