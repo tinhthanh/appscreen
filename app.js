@@ -2885,22 +2885,25 @@ function applyTranslations() {
     const text = getTextSettings();
     const isHeadline = currentTranslateTarget === 'headline';
     const texts = isHeadline ? text.headlines : text.subheadlines;
-    
+
     // Get all translations from the modal
     document.querySelectorAll('#translate-targets .translate-target-item').forEach(item => {
         const lang = item.dataset.lang;
         const textarea = item.querySelector('textarea');
         texts[lang] = textarea.value;
     });
-    
+
     // Update the current text field
     const currentLang = isHeadline ? text.currentHeadlineLang : text.currentSubheadlineLang;
     if (isHeadline) {
         document.getElementById('headline-text').value = texts[currentLang] || '';
     } else {
         document.getElementById('subheadline-text').value = texts[currentLang] || '';
+        // Enable subheadline display when translations are applied
+        text.subheadlineEnabled = true;
+        syncUIWithState();
     }
-    
+
     saveState();
     updateCanvas();
 }
@@ -3424,6 +3427,8 @@ Translate to these language codes: ${targetLangs.join(', ')}`;
                     } else {
                         if (!text.subheadlines) text.subheadlines = {};
                         text.subheadlines[lang] = itemTranslations[lang];
+                        // Enable subheadline display when translations are added
+                        text.subheadlineEnabled = true;
                     }
                     appliedCount++;
                 }

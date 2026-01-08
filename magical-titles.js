@@ -424,9 +424,11 @@ Write all titles in ${langName}.`;
                 // Set the titles for the source language
                 if (titleData.headline) {
                     screenshot.text.headlines[sourceLang] = titleData.headline;
+                    screenshot.text.headlineEnabled = true;
                 }
                 if (titleData.subheadline) {
                     screenshot.text.subheadlines[sourceLang] = titleData.subheadline;
+                    screenshot.text.subheadlineEnabled = true;
                 }
             }
         }
