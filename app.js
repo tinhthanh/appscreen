@@ -1014,6 +1014,7 @@ function saveState() {
 
     const stateToSave = {
         id: currentProjectId,
+        formatVersion: 2, // Version 2: new 3D positioning formula
         screenshots: screenshotsToSave,
         selectedIndex: state.selectedIndex,
         outputDevice: state.outputDevice,
@@ -1040,6 +1041,25 @@ function saveState() {
     }
 }
 
+// Migrate 3D positions from old formula to new formula
+// Old: xOffset = ((x-50)/50)*2, yOffset = -((y-50)/50)*3
+// New: xOffset = ((x-50)/50)*(1-scale)*0.9, yOffset = -((y-50)/50)*(1-scale)*2
+function migrate3DPosition(screenshotSettings) {
+    if (!screenshotSettings?.use3D) return; // Only migrate 3D screenshots
+
+    const scale = (screenshotSettings.scale || 70) / 100;
+    const oldX = screenshotSettings.x ?? 50;
+    const oldY = screenshotSettings.y ?? 50;
+
+    // Convert old position to new position that produces same visual offset
+    // newX = 50 + (oldX - 50) * oldFactor / newFactor
+    const xFactor = 2 / ((1 - scale) * 0.9);
+    const yFactor = 3 / ((1 - scale) * 2);
+
+    screenshotSettings.x = Math.max(0, Math.min(100, 50 + (oldX - 50) * xFactor));
+    screenshotSettings.y = Math.max(0, Math.min(100, 50 + (oldY - 50) * yFactor));
+}
+
 // Load state from IndexedDB for current project
 function loadState() {
     if (!db) return Promise.resolve();
@@ -1057,6 +1077,9 @@ function loadState() {
                     const isOldFormat = !parsed.defaults && (parsed.background || parsed.screenshot || parsed.text);
                     const hasScreenshotsWithoutSettings = parsed.screenshots?.some(s => !s.background && !s.screenshot && !s.text);
                     const needsMigration = isOldFormat || hasScreenshotsWithoutSettings;
+
+                    // Check if we need to migrate 3D positions (formatVersion < 2)
+                    const needs3DMigration = !parsed.formatVersion || parsed.formatVersion < 2;
 
                     // Load screenshots with their per-screenshot settings
                     state.screenshots = [];
@@ -1118,13 +1141,17 @@ function loadState() {
                                             if (langLoadedCount === langKeys.length) {
                                                 // All language versions loaded
                                                 const firstLang = langKeys[0];
+                                                const screenshotSettings = s.screenshot || JSON.parse(JSON.stringify(migratedScreenshot));
+                                                if (needs3DMigration) {
+                                                    migrate3DPosition(screenshotSettings);
+                                                }
                                                 state.screenshots[index] = {
                                                     image: localizedImages[firstLang]?.image, // Legacy compat
                                                     name: s.name,
                                                     deviceType: s.deviceType,
                                                     localizedImages: localizedImages,
                                                     background: s.background || JSON.parse(JSON.stringify(migratedBackground)),
-                                                    screenshot: s.screenshot || JSON.parse(JSON.stringify(migratedScreenshot)),
+                                                    screenshot: screenshotSettings,
                                                     text: s.text || JSON.parse(JSON.stringify(migratedText)),
                                                     overrides: s.overrides || {}
                                                 };
@@ -1157,13 +1184,17 @@ function loadState() {
                                         name: s.name
                                     };
 
+                                    const screenshotSettings = s.screenshot || JSON.parse(JSON.stringify(migratedScreenshot));
+                                    if (needs3DMigration) {
+                                        migrate3DPosition(screenshotSettings);
+                                    }
                                     state.screenshots[index] = {
                                         image: img,
                                         name: s.name,
                                         deviceType: s.deviceType,
                                         localizedImages: localizedImages,
                                         background: s.background || JSON.parse(JSON.stringify(migratedBackground)),
-                                        screenshot: s.screenshot || JSON.parse(JSON.stringify(migratedScreenshot)),
+                                        screenshot: screenshotSettings,
                                         text: s.text || JSON.parse(JSON.stringify(migratedText)),
                                         overrides: s.overrides || {}
                                     };
@@ -2458,12 +2489,6 @@ function setupEventListeners() {
 
             const use3D = btn.dataset.type === '3d';
             setScreenshotSetting('use3D', use3D);
-
-            // Center Y position when switching to 3D mode for better default positioning
-            if (use3D) {
-                setScreenshotSetting('y', 50);
-            }
-
             document.getElementById('rotation-3d-options').style.display = use3D ? 'block' : 'none';
 
             // Hide 2D-only settings in 3D mode, show 3D tip

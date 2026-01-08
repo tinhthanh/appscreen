@@ -658,11 +658,13 @@ function renderThreeJSToCanvas(targetCanvas, width, height) {
             const screenshotScale = ss.scale / 100;
             phonePivot.scale.setScalar(screenshotScale);
 
-            // Position: convert percentage to 3D space offset
-            // X: 0% = left, 50% = center, 100% = right
-            // Y: 0% = top, 50% = center, 100% = bottom
-            const xOffset = ((ss.x - 50) / 50) * 2; // -2 to 2 range
-            const yOffset = -((ss.y - 50) / 50) * 3; // -3 to 3 range (inverted for 3D)
+            // Position: match 2D behavior where available space depends on (1 - scale)
+            // This ensures same percentages look the same in 2D and 3D
+            // X uses smaller factor (1.1) since canvas is taller than wide (400x700 aspect)
+            const availableSpaceY = (1 - screenshotScale) * 2;
+            const availableSpaceX = (1 - screenshotScale) * 0.9;
+            const xOffset = ((ss.x - 50) / 50) * availableSpaceX;
+            const yOffset = -((ss.y - 50) / 50) * availableSpaceY; // Inverted for 3D
             phonePivot.position.set(
                 xOffset + basePositionOffset.x,
                 yOffset + basePositionOffset.y,
@@ -796,11 +798,13 @@ function renderThreeJSForScreenshot(targetCanvas, width, height, screenshotIndex
         (rotation3D.z + modelRot.z) * Math.PI / 180
     );
 
-    // Apply scale and position
+    // Apply scale and position (matching 2D behavior)
     const screenshotScale = ss.scale / 100;
     pivotToUse.scale.setScalar(screenshotScale);
-    const xOffset = ((ss.x - 50) / 50) * 2;
-    const yOffset = -((ss.y - 50) / 50) * 3;
+    const availableSpaceY = (1 - screenshotScale) * 2;
+    const availableSpaceX = (1 - screenshotScale) * 0.9;
+    const xOffset = ((ss.x - 50) / 50) * availableSpaceX;
+    const yOffset = -((ss.y - 50) / 50) * availableSpaceY;
     pivotToUse.position.set(
         xOffset + basePositionOffset.x,
         yOffset + basePositionOffset.y,
